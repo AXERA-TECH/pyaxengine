@@ -17,6 +17,6 @@ setup(
     ],
     packages=["axengine"],
     ext_modules=[],
-    install_requires=["cffi>=1.0.0", "numpy>=1.22", "ml-dtypes>=0.1.0"],
-    setup_requires=["cffi>=1.0.0", "numpy>=1.22", "ml-dtypes>=0.1.0"],
+    install_requires=["cffi>=1.0.0", "ml-dtypes>=0.1.0"],
+    setup_requires=["cffi>=1.0.0", "ml-dtypes>=0.1.0"],
 )
