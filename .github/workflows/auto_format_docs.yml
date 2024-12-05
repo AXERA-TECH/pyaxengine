@@ -1,0 +1,44 @@
+name: Format Code
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "16"
+
+      - name: Install Prettier
+        run: |
+          npm install --save-dev prettier
+
+      - name: Format YAML and Markdown files
+        run: |
+          npx prettier --write "**/*.yml" "**/*.md"
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          git diff --exit-code || echo "Changes detected"
+
+      - name: Commit changes
+        if: steps.check_changes.outputs.exit_code != 0
+        run: |
+          git config --local user.name "github-actions"
+          git config --local user.email "github-actions@github.com"
+          git add .
+          git commit -m "Format YAML and Markdown files with Prettier" || echo "No changes to commit"
+          git push
