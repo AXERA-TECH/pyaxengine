@@ -157,6 +157,12 @@ class InferenceSession:
     def __del__(self):
         self._final()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._final()
+
     def _init(self, vnpu=VNPUType.DISABLED):  # vnpu type, the default is disabled
         ret = self._sys_lib.AX_SYS_Init()
         if 0 != ret:
