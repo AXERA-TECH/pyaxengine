@@ -344,7 +344,7 @@ class InferenceSession:
             for i, one in enumerate(self.get_inputs()):
                 if one.name == key:
                     assert (
-                        one.shape == npy.shape and one.dtype == npy.dtype
+                        list(one.shape) == list(npy.shape) and one.dtype == npy.dtype
                     ), f"model inputs({key}) expect shape {one.shape} and dtype {one.dtype}, howerver gets input with shape {npy.shape} and dtype {npy.dtype}"
 
                     if not (
