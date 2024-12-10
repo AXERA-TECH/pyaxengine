@@ -340,6 +340,16 @@ class InferenceSession(BaseInferenceSession):
         for key, npy in input_feed.items():
             for i, one in enumerate(self.get_inputs()):
                 if one.name == key:
+                    assert (
+                        list(one.shape) == list(npy.shape) and one.dtype == npy.dtype
+                    ), f"model inputs({key}) expect shape {one.shape} and dtype {one.dtype}, howerver gets input with shape {npy.shape} and dtype {npy.dtype}"
+
+                    if not (
+                        not npy.flags.c_contiguous
+                        and npy.flags.f_contiguous
+                        and npy.flags.contiguous
+                    ):
+                        npy = np.ascontiguousarray(npy)
                     npy_ptr = self._rt_ffi.cast("void *", npy.ctypes.data)
                     self._rt_lib.memcpy(self.mgroup_input_tensors[grp_id][i].pVirAddr, npy_ptr, npy.nbytes)
                     break
