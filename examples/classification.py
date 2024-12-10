@@ -86,7 +86,7 @@ if __name__ == "__main__":
     ap.add_argument('-b', '--backend', type=str, help='ax/axcl', default='ax')
     args = ap.parse_args()
     backend = args.backend
-    assert backend in ['ax', 'axcl']
+    assert backend in ['ax', 'axcl'], "backend must be ax or axcl"
 
     MODEL_PATH = "/opt/data/npu/models/mobilenetv2.axmodel"
     IMAGE_PATH = "/opt/data/npu/images/cat.jpg"
