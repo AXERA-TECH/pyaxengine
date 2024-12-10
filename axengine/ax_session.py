@@ -21,7 +21,7 @@ class InferenceSession(BaseInferenceSession):
         path_or_bytes: str | bytes | os.PathLike,
     ) -> None:
         from . import _ax_capi as _capi
-        from . import _chip
+        from . import _ax_chip as _chip
 
         super().__init__()
 
