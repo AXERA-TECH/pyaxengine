@@ -5,4 +5,5 @@
 # written consent of Axera Semiconductor Co., Ltd.
 #
 
-from .session import InferenceSession
+from .ax_session import InferenceSession as AXInferenceSession
+from .axcl_session import InferenceSession as AXCLInferenceSession
