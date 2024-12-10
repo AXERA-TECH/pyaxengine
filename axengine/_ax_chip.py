@@ -6,7 +6,7 @@
 #
 
 from . import _types
-from ._capi import E as _lib
+from ._ax_capi import E as _lib
 
 __all__: ["T"]
 
