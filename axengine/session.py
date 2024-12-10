@@ -1,7 +1,6 @@
 import ctypes.util
 import os
 
-from ._session import BaseInferenceSession
 from .ax_session import InferenceSession as AXInferenceSession
 from .axcl_session import InferenceSession as AXCLInferenceSession
 
