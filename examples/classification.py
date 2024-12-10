@@ -10,11 +10,13 @@ import numpy as np
 from PIL import Image
 
 
-def load_model(model_path, backend):
-    if backend == 'ax':
-        session = axe.AXInferenceSession(model_path)
-    else:
-        session = axe.AXCLInferenceSession(model_path)
+def load_model(model_path, backend='auto', device_no=-1):
+    if backend == 'auto':
+        session = axe.InferenceSession(model_path, device_no)
+    elif backend == 'ax':
+        session = axe.session.AXInferenceSession(model_path)
+    elif backend == 'axcl':
+        session = axe.session.AXCLInferenceSession(model_path, device_no)
     return session
 
 
@@ -60,9 +62,9 @@ def get_top_k_predictions(output, k=5):
     return top_k_indices, top_k_scores
 
 
-def main(model_path, image_path, target_size, crop_size, k, backend):
+def main(model_path, image_path, target_size, crop_size, k, backend='auto', device_no=-1):
     # Load the model
-    session = load_model(model_path, backend)
+    session = load_model(model_path, backend, device_no)
 
     # Preprocess the image
     input_tensor = preprocess_image(image_path, target_size, crop_size)
@@ -83,14 +85,15 @@ def main(model_path, image_path, target_size, crop_size, k, backend):
 if __name__ == "__main__":
     import argparse
     ap = argparse.ArgumentParser()
-    ap.add_argument('-b', '--backend', type=str, help='ax/axcl', default='ax')
+    ap.add_argument('-b', '--backend', type=str, help='auto/ax/axcl', default='auto')
+    ap.add_argument('-d', '--device_no', type=int, help='axcl device no, -1: onboard npu, >0: axcl devices', default=0)
     args = ap.parse_args()
-    backend = args.backend
-    assert backend in ['ax', 'axcl'], "backend must be ax or axcl"
+    assert args.backend in ['auto', 'ax', 'axcl'], "backend must be auto/ax/axcl"
+    assert args.device_no >= -1, "device_no must be greater than -1"
 
-    MODEL_PATH = "/opt/data/npu/models/mobilenetv2.axmodel"
-    IMAGE_PATH = "/opt/data/npu/images/cat.jpg"
+    MODEL_PATH = "../mobilenetv2.axmodel"
+    IMAGE_PATH = "../cat.jpg"
     TARGET_SIZE = (256, 256)  # Resize to 256x256
     CROP_SIZE = (224, 224)  # Crop to 224x224
     K = 5  # Top K predictions
-    main(MODEL_PATH, IMAGE_PATH, TARGET_SIZE, CROP_SIZE, K, backend)
+    main(MODEL_PATH, IMAGE_PATH, TARGET_SIZE, CROP_SIZE, K, args.backend, args.device_no)

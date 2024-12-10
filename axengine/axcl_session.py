@@ -24,7 +24,7 @@ class InferenceSession(BaseInferenceSession):
     ) -> None:
         from . import _axcl_capi as _capi
 
-        super().__init__()
+        super(BaseInferenceSession).__init__()
 
         # load shared library
         self._rt_lib = _capi.R

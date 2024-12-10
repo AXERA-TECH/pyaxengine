@@ -23,7 +23,7 @@ class InferenceSession(BaseInferenceSession):
         from . import _ax_capi as _capi
         from . import _ax_chip as _chip
 
-        super().__init__()
+        super(BaseInferenceSession).__init__()
 
         # load shared library
         self._sys_lib = _capi.S
