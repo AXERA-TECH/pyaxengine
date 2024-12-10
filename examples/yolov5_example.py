@@ -477,6 +477,7 @@ def parse_args() -> argparse.ArgumentParser:
         "--save_path", type=str, default="save.jpg", help="save image path"
     )
     args = parser.parse_args()
+    assert args.backend in ['ax', 'axcl'], "backend must be ax or axcl"
     return args
 
 
