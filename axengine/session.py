@@ -13,8 +13,10 @@ class InferenceSession(AXCLInferenceSession, AXInferenceSession):
         if device_id >= 0:
             if ctypes.util.find_library('axcl_rt') is not None:
                 is_axcl = True
+            elif ctypes.util.find_library('ax_engine') is not None:
+                is_axcl = False
             else:
-                raise RuntimeError("axcl_rt not found, please install axcl_host driver")
+                print("axcl_rt not found, please install axcl_host driver")
 
         if is_axcl:
             print(f"Using axclrt backend, device_no: {device_id}")
