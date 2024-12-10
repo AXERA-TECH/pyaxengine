@@ -31,7 +31,6 @@
 将 [classification.py](https://github.com/AXERA-TECH/pyaxengine/blob/main/examples/classification.py) 拷贝到开发板上并执行。
 
 ```
-# AX650开发板模式
 root@ax650:~/samples# python3 classification.py
 [INFO] Chip type: ChipType.AX650
 [INFO] Engine version: 2.7.2a
@@ -45,8 +44,8 @@ Class Index: 277, Score: 8.452778816223145
 Class Index: 281, Score: 8.320704460144043
 Class Index: 287, Score: 7.924479961395264
 
-# AX650 M.2算力卡模式
-root@ax650:~/samples# python3 classification.py -b axcl
+# 默认将自动检测计算设备，但也可以强制要求跑在AX650 M.2算力卡上，设备号是1
+root@ax650:~/samples# python3 classification.py -b axcl -d 1
 [INFO] SOC Name: AX650N
 [INFO] Runtime version: 1.0.0
 [INFO] VNPU type: VNPUType.DISABLED
