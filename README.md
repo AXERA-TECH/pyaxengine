@@ -23,7 +23,7 @@
 
 ### 获取 wheel 包并安装
 
-- [下载链接](https://github.com/AXERA-TECH/pyaxengine/releases/download/0.0.1rc1/axengine-0.0.1-py3-none-any.whl)
+- [下载链接](https://github.com/AXERA-TECH/pyaxengine/releases/download/0.0.1rc2/axengine-0.0.1-py3-none-any.whl)
 - 将 `axengine-x.x.x-py3-none-any.whl` 拷贝到开发板上，执行 `pip install axengine-x.x.x-py3-none-any.whl` 安装
 
 ### 简单示例
