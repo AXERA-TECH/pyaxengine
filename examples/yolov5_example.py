@@ -458,9 +458,9 @@ def detect_yolov5(model_path, image_path, save_path, backend='auto', device_no=-
     if backend == 'auto':
         session = axe.InferenceSession(model_path, device_no)
     elif backend == 'ax':
-        session = axe.session.AXInferenceSession(model_path)
+        session = axe.AXInferenceSession(model_path)
     elif backend == 'axcl':
-        session = axe.session.AXCLInferenceSession(model_path, device_no)
+        session = axe.AXCLInferenceSession(model_path, device_no)
     image_data = cv2.imread(image_path)
     inputs, origin_shape = pre_processing(image_data, (640, 640))
     inputs = np.ascontiguousarray(inputs)

@@ -14,9 +14,9 @@ def load_model(model_path, backend='auto', device_no=-1):
     if backend == 'auto':
         session = axe.InferenceSession(model_path, device_no)
     elif backend == 'ax':
-        session = axe.session.AXInferenceSession(model_path)
+        session = axe.AXInferenceSession(model_path)
     elif backend == 'axcl':
-        session = axe.session.AXCLInferenceSession(model_path, device_no)
+        session = axe.AXCLInferenceSession(model_path, device_no)
     return session
 
 
