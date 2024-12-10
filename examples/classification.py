@@ -46,7 +46,7 @@ def preprocess_image(image_path, target_size=(256, 256), crop_size=(224, 224)):
     img_array = np.array(img).astype("uint8")
     # Transpose to (1, C, H, W)
     # img_array = np.transpose(img_array, (2, 0, 1))
-    # img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
+    img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
     return img_array
 
 
