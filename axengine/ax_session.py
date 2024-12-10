@@ -4,13 +4,10 @@
 # may not be copied or distributed in any isomorphic form without the prior
 # written consent of Axera Semiconductor Co., Ltd.
 #
-
+from ._session import BaseInferenceSession
 from ._types import VNPUType, ModelType, ChipType
 from ._types import _transform_dtype
 from ._node import NodeArg
-
-from . import _chip
-from . import _capi
 
 import os
 import numpy as np
@@ -18,11 +15,16 @@ import numpy as np
 __all__: ["InferenceSession"]
 
 
-class InferenceSession:
+class InferenceSession(BaseInferenceSession):
     def __init__(
         self,
         path_or_bytes: str | bytes | os.PathLike,
     ) -> None:
+        from . import _ax_capi as _capi
+        from . import _ax_chip as _chip
+
+        super().__init__()
+
         # load shared library
         self._sys_lib = _capi.S
         self._sys_ffi = _capi.M
@@ -161,15 +163,6 @@ class InferenceSession:
             self._io[0].pOutputs[i].phyAddr = phy[0]
             self._io[0].pOutputs[i].pVirAddr = vir[0]
 
-    def __del__(self):
-        self._final()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self._final()
-
     def _init(self, vnpu=VNPUType.DISABLED):  # vnpu type, the default is disabled
         ret = self._sys_lib.AX_SYS_Init()
         if 0 != ret:
@@ -298,39 +291,6 @@ class InferenceSession:
                 one_group_output.append(meta)
             outputs.append(one_group_output)
         return outputs
-
-    def get_inputs(self, shape_group=0) -> list[NodeArg]:
-        if shape_group > self._shape_count:
-            raise ValueError(
-                f"Shape group '{shape_group}' is out of range, total {self._shape_count}."
-            )
-        selected_info = self._inputs[shape_group]
-        return selected_info
-
-    def get_outputs(self, shape_group=0) -> list[NodeArg]:
-        if shape_group > self._shape_count:
-            raise ValueError(
-                f"Shape group '{shape_group}' is out of range, total {self._shape_count}."
-            )
-        selected_info = self._outputs[shape_group]
-        return selected_info
-
-    # copy from onnxruntime
-    def _validate_input(self, feed_input_names):
-        missing_input_names = []
-        for i in self.get_inputs():
-            if i.name not in feed_input_names:
-                missing_input_names.append(i.name)
-        if missing_input_names:
-            raise ValueError(
-                f"Required inputs ({missing_input_names}) are missing from input feed ({feed_input_names})."
-            )
-
-    def _validate_output(self, output_names):
-        if output_names is not None:
-            for name in output_names:
-                if name not in [o.name for o in self.get_outputs()]:
-                    raise ValueError(f"Output name '{name}' is not registered.")
 
     def run(self, output_names, input_feed, run_options=None):
         self._validate_input(list(input_feed.keys()))
