@@ -10,8 +10,11 @@ import numpy as np
 from PIL import Image
 
 
-def load_model(model_path):
-    session = axe.InferenceSession(model_path)
+def load_model(model_path, backend):
+    if backend == 'ax':
+        session = axe.AXInferenceSession(model_path)
+    else:
+        session = axe.AXCLInferenceSession(model_path)
     return session
 
 
@@ -57,9 +60,9 @@ def get_top_k_predictions(output, k=5):
     return top_k_indices, top_k_scores
 
 
-def main(model_path, image_path, target_size, crop_size, k):
+def main(model_path, image_path, target_size, crop_size, k, backend):
     # Load the model
-    session = load_model(model_path)
+    session = load_model(model_path, backend)
 
     # Preprocess the image
     input_tensor = preprocess_image(image_path, target_size, crop_size)
@@ -78,9 +81,16 @@ def main(model_path, image_path, target_size, crop_size, k):
 
 
 if __name__ == "__main__":
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument('-b', '--backend', type=str, help='ax/axcl', default='ax')
+    args = ap.parse_args()
+    backend = args.backend
+    assert backend in ['ax', 'axcl']
+
     MODEL_PATH = "/opt/data/npu/models/mobilenetv2.axmodel"
     IMAGE_PATH = "/opt/data/npu/images/cat.jpg"
     TARGET_SIZE = (256, 256)  # Resize to 256x256
     CROP_SIZE = (224, 224)  # Crop to 224x224
     K = 5  # Top K predictions
-    main(MODEL_PATH, IMAGE_PATH, TARGET_SIZE, CROP_SIZE, K)
+    main(MODEL_PATH, IMAGE_PATH, TARGET_SIZE, CROP_SIZE, K, backend)

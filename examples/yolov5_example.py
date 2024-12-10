@@ -453,9 +453,12 @@ def post_processing(outputs, origin_shape, input_shape):
     return pred
 
 
-def detect_yolov5(model_path, image_path, save_path):
+def detect_yolov5(model_path, image_path, save_path, backend):
 
-    session = axe.InferenceSession(model_path)
+    if backend == 'ax':
+        session = axe.AXInferenceSession(model_path)
+    else:
+        session = axe.AXCLInferenceSession(model_path)
     image_data = cv2.imread(image_path)
     inputs, origin_shape = pre_processing(image_data, (640, 640))
     inputs = np.ascontiguousarray(inputs)
@@ -469,6 +472,7 @@ def parse_args() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="yolov5 example")
     parser.add_argument("--model", type=str, required=True, help="axmodel path")
     parser.add_argument("--image_path", type=str, required=True, help="image path")
+    parser.add_argument('-b', '--backend', type=str, help='ax/axcl', default='ax')
     parser.add_argument(
         "--save_path", type=str, default="save.jpg", help="save image path"
     )
@@ -480,6 +484,7 @@ if __name__ == "__main__":
     args = parse_args()
     print(f"model             : {args.model}")
     print(f"image path        : {args.image_path}")
+    print(f"backend        : {args.backend}")
     print(f"save draw image to: {args.save_path}")
-    detect_yolov5(args.model, args.image_path, args.save_path)
+    detect_yolov5(args.model, args.image_path, args.save_path, args.backend)
 # python3 yolov5_example.py --model /opt/data/npu/models/yolov5s.axmodel --image_path /opt/data/npu/images/dog.jpg --save_path ./detect_dog.jpg
