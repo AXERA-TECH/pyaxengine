@@ -121,7 +121,7 @@ class InferenceSession(BaseInferenceSession):
                 tensor.pVirAddr = io_data.pInputs[i].pVirAddr
                 self.mgroup_input_tensors[grp_id].append(tensor)
                 print(f'\tname: {self._rt_ffi.string(io_data.pInputs[i].Name).decode()}')
-                print(f'\t\tshape: {' x '.join([str(io_data.pInputs[i].dims.dims[j]) for j in range(io_data.pInputs[i].dims.dimCount)])}')
+                print(f'\t\tshape: {" x ".join([str(io_data.pInputs[i].dims.dims[j]) for j in range(io_data.pInputs[i].dims.dimCount)])}')
                 input_node_args.append(
                     NodeArg(self._rt_ffi.string(io_data.pInputs[i].Name).decode(), 'uint8',
                             [io_data.pInputs[i].dims.dims[j] for j in range(io_data.pInputs[i].dims.dimCount)]))
@@ -139,7 +139,7 @@ class InferenceSession(BaseInferenceSession):
                 tensor.pVirAddr = io_data.pOutputs[i].pVirAddr
                 self.mgroup_output_tensors[grp_id].append(tensor)
                 print(f'\tname: {self._rt_ffi.string(io_data.pOutputs[i].Name).decode()}')
-                print(f'\t\tshape: {' x '.join([str(io_data.pOutputs[i].dims.dims[j]) for j in range(io_data.pOutputs[i].dims.dimCount)])}')
+                print(f'\t\tshape: {" x ".join([str(io_data.pOutputs[i].dims.dims[j]) for j in range(io_data.pOutputs[i].dims.dimCount)])}')
                 output_node_args.append(
                     NodeArg(self._rt_ffi.string(io_data.pOutputs[i].Name).decode(), 'float32',
                             [io_data.pOutputs[i].dims.dims[j] for j in range(io_data.pOutputs[i].dims.dimCount)]))
