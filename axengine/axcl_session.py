@@ -384,8 +384,8 @@ class InferenceSession(BaseInferenceSession):
                    for i, output_tensor in enumerate(self.mgroup_output_tensors[grp_id])
                    if self.get_outputs()[i].name in output_names]
 
-        print(f'[INFO] cost time in host to device: {cost_host_to_device * 1009:.3f}ms, '
-              f'inference: {cost_inference * 1009:.3f}ms, '
-              f'device to host: {cost_device_to_host * 1009:.3f}ms')
+        print(f'[INFO] cost time in host to device: {cost_host_to_device * 1000:.3f}ms, '
+              f'inference: {cost_inference * 1000:.3f}ms, '
+              f'device to host: {cost_device_to_host * 1000:.3f}ms')
 
         return outputs
