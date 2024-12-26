@@ -249,7 +249,7 @@ class InferenceSession(BaseInferenceSession):
     def _init(self, device_id=0, vnpu=VNPUType.DISABLED):  # vnpu type, the default is disabled
         ret = self._rt_lib.axclInit([])
         if ret != 0:
-            raise RuntimeError("Failed to initialize runtime.")
+            raise RuntimeError(f"Failed to initialize runtime. {ret}.")
 
         lst = self._rt_ffi.new("axclrtDeviceList *")
         ret = self._rt_lib.axclrtGetDeviceList(lst)
