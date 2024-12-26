@@ -44,7 +44,7 @@ Class Index: 277, Score: 8.452778816223145
 Class Index: 281, Score: 8.320704460144043
 Class Index: 287, Score: 7.924479961395264
 
-# 默认将自动检测计算设备，但也可以强制要求跑在AX650 M.2算力卡上，设备号是1
+# 默认将自动检测计算设备，但也可以强制要求跑在AX650 M.2算力卡上，假设设备号是1，（设备号必须大于等于0，具体查看axcl-smi）
 root@ax650:~/samples# python3 classification.py -b axcl -d 1
 [INFO] SOC Name: AX650N
 [INFO] Runtime version: 1.0.0
