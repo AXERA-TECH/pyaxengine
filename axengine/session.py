@@ -16,7 +16,7 @@ def InferenceSession(path_or_bytes: str | bytes | os.PathLike, device_id: int = 
             print("axcl_rt not found, please install axcl_host driver")
 
     if is_axcl:
-        print(f"Using axclrt backend, device_no: {device_id}")
+        print(f"Using axclrt backend, device_id: {device_id}")
         return AXCLInferenceSession(path_or_bytes, device_id)
     else:
         print("Using ax backend with onboard npu")
