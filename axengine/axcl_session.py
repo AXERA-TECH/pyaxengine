@@ -26,6 +26,8 @@ class InferenceSession(BaseInferenceSession):
 
         super(BaseInferenceSession).__init__()
 
+        self.device_id = device_id
+
         # load shared library
         self._rt_lib = _capi.R
         self._rt_ffi = _capi.O
@@ -34,12 +36,18 @@ class InferenceSession(BaseInferenceSession):
         print(f"[INFO] SOC Name: {self.soc_name}")
 
         # init axcl
+        self.axcl_device_id = -1  # axcl_device_id != device_id, device_id is just the index of the list of axcl_device_ids
         ret = self._init(device_id)
         if 0 != ret:
             raise RuntimeError("Failed to initialize axclrt.")
         print(f"[INFO] Runtime version: {self._get_version()}")
 
-        # handle, context, info, io
+        self._thread_context = self._rt_ffi.new("axclrtContext *")
+        ret = self._rt_lib.axclrtGetCurrentContext(self._thread_context)
+        if ret != 0:
+            raise RuntimeError("axclrtGetCurrentContext failed")
+
+        # model handle, context, info, io
         self._handle = self._rt_ffi.new("uint64_t *")
         self._context = self._rt_ffi.new("uint64_t *")
         self.io_info = self._rt_ffi.new("axclrtEngineIOInfo *")
@@ -256,7 +264,8 @@ class InferenceSession(BaseInferenceSession):
         if ret != 0 or lst.num == 0:
             raise RuntimeError(f"Get AXCL device failed 0x{ret:08x}, find total {lst.num} device.")
 
-        ret = self._rt_lib.axclrtSetDevice(lst.devices[device_id])
+        self.axcl_device_id = lst.devices[device_id]
+        ret = self._rt_lib.axclrtSetDevice(self.axcl_device_id)
         if ret != 0 or lst.num == 0:
             raise RuntimeError(f"Set AXCL device failed 0x{ret:08x}.")
 
@@ -269,6 +278,7 @@ class InferenceSession(BaseInferenceSession):
     def _final(self):
         if self._handle[0] is not None:
             self._unload()
+        self._rt_lib.axclrtResetDevice(self.axcl_device_id)
         self._rt_lib.axclFinalize()
         return
 
@@ -330,6 +340,10 @@ class InferenceSession(BaseInferenceSession):
     def run(self, output_names, input_feed, run_options=None):
         self._validate_input(list(input_feed.keys()))
         self._validate_output(output_names)
+
+        ret = self._rt_lib.axclrtSetCurrentContext(self._thread_context[0])
+        if ret != 0:
+            raise RuntimeError("axclrtSetCurrentContext failed")
 
         if None is output_names:
             output_names = [o.name for o in self.get_outputs()]

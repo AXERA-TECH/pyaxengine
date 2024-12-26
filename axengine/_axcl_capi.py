@@ -20,6 +20,7 @@ O.cdef(
     """
     #define AXCL_MAX_DEVICE_COUNT 256
     typedef int32_t axclError;
+    typedef void *axclrtContext;
 """
 )
 
@@ -149,6 +150,18 @@ O.cdef(
     """
     axclError axclrtGetDeviceList(axclrtDeviceList *deviceList);
     axclError axclrtSetDevice(int32_t deviceId);
+    axclError axclrtResetDevice(int32_t deviceId);
+"""
+)
+
+# axcl_rt_context.h
+O.cdef(
+    """
+    axclError axclrtCreateContext(axclrtContext *context, int32_t deviceId);
+    axclError axclrtDestroyContext(axclrtContext context);
+    axclError axclrtSetCurrentContext(axclrtContext context);
+    axclError axclrtGetCurrentContext(axclrtContext *context);
+    axclError axclrtGetDefaultContext(axclrtContext *context, int32_t deviceId);
 """
 )
 
