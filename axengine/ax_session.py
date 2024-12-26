@@ -116,7 +116,11 @@ class InferenceSession(BaseInferenceSession):
         print(f"[INFO] Compiler version: {self._get_model_tool_version()}")
 
         # get shape group count
-        self._shape_count = self._get_shape_count()
+        try:
+            self._shape_count = self._get_shape_count()
+        except AttributeError as e:
+            print(f"[WARNING] {e}")
+            self._shape_count = 1
 
         # get model shape
         self._info = self._get_info()
