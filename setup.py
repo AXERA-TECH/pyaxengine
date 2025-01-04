@@ -1,3 +1,10 @@
+# Copyright (c) 2019-2024 Axera Semiconductor Co., Ltd. All Rights Reserved.
+#
+# This source file is the property of Axera Semiconductor Co., Ltd. and
+# may not be copied or distributed in any isomorphic form without the prior
+# written consent of Axera Semiconductor Co., Ltd.
+#
+
 from setuptools import setup
 
 setup(
@@ -17,6 +24,6 @@ setup(
     ],
     packages=["axengine"],
     ext_modules=[],
-    install_requires=["cffi>=1.0.0", "ml-dtypes>=0.1.0"],
-    setup_requires=["cffi>=1.0.0", "ml-dtypes>=0.1.0"],
+    install_requires=["cffi>=1.0.0", "ml-dtypes>=0.1.0", "numpy>=1.22"],
+    setup_requires=["cffi>=1.0.0", "ml-dtypes>=0.1.0", "numpy>=1.22"],
 )

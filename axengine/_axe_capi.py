@@ -10,12 +10,12 @@ import platform
 
 from cffi import FFI
 
-__all__: ["S", "M", "E", "N"]
+__all__: ["sys_lib", "sys_cffi", "engine_lib", "engine_cffi"]
 
-M = FFI()
+sys_cffi = FFI()
 
 # ax_base_type.h
-M.cdef(
+sys_cffi.cdef(
     """
     typedef int                         AX_S32;
     typedef unsigned int                AX_U32;
@@ -26,7 +26,7 @@ M.cdef(
 )
 
 # ax_sys_api.h
-M.cdef(
+sys_cffi.cdef(
     """
     AX_S32 AX_SYS_Init(AX_VOID);
     AX_S32 AX_SYS_Deinit(AX_VOID);
@@ -43,13 +43,13 @@ assert (
     sys_path is not None
 ), f"Failed to find library {sys_name}. Please ensure it is installed and in the library path."
 
-S = M.dlopen(sys_path)
-assert S is not None, f"Failed to load library {sys_path}. Please ensure it is installed and in the library path."
+sys_lib = sys_cffi.dlopen(sys_path)
+assert sys_lib is not None, f"Failed to load library {sys_path}. Please ensure it is installed and in the library path."
 
-N = FFI()
+engine_cffi = FFI()
 
 # ax_base_type.h
-N.cdef(
+engine_cffi.cdef(
     """
     typedef unsigned long long int      AX_U64;
     typedef unsigned int                AX_U32;
@@ -67,14 +67,14 @@ N.cdef(
 )
 
 # ax_engine_type.h, base type
-N.cdef(
+engine_cffi.cdef(
     """
     typedef AX_U32                      AX_ENGINE_NPU_SET_T;
 """
 )
 
 # ax_engine_type.h, enum
-N.cdef(
+engine_cffi.cdef(
     """
     typedef enum _AX_ENGINE_TENSOR_LAYOUT_E
     {
@@ -128,7 +128,7 @@ N.cdef(
 )
 
 # ax_engine_type.h, architecturally agnostic struct
-N.cdef(
+engine_cffi.cdef(
     """
     typedef enum {
         AX_ENGINE_VIRTUAL_NPU_DISABLE   = 0,
@@ -173,7 +173,7 @@ arch = platform.architecture()[0]
 
 # ax_engine_type.h, struct
 if arch == "64bit":
-    N.cdef(
+    engine_cffi.cdef(
         """
         typedef struct _AX_ENGINE_IO_META_T
         {
@@ -224,7 +224,7 @@ if arch == "64bit":
     """
     )
 else:
-    N.cdef(
+    engine_cffi.cdef(
         """
         typedef struct _AX_ENGINE_IO_META_T
         {
@@ -276,7 +276,7 @@ else:
     )
 
 # ax_engine_api.h
-N.cdef(
+engine_cffi.cdef(
     """
     const AX_CHAR* AX_ENGINE_GetVersion(AX_VOID);
 
@@ -319,5 +319,5 @@ assert (
     engine_path is not None
 ), f"Failed to find library {engine_name}. Please ensure it is installed and in the library path."
 
-E = N.dlopen(engine_path)
-assert E is not None, f"Failed to load library {engine_path}. Please ensure it is installed and in the library path."
+engine_lib = engine_cffi.dlopen(engine_path)
+assert engine_lib is not None, f"Failed to load library {engine_path}. Please ensure it is installed and in the library path."

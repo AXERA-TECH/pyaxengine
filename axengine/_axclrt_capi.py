@@ -4,19 +4,17 @@
 # may not be copied or distributed in any isomorphic form without the prior
 # written consent of Axera Semiconductor Co., Ltd.
 #
-# modified by zylo117
 
 import ctypes.util
-import platform
 
 from cffi import FFI
 
-__all__: ["R", "O"]
+__all__: ["axclrt_cffi", "axclrt_lib"]
 
-O = FFI()
+axclrt_cffi = FFI()
 
 # axcl_base.h
-O.cdef(
+axclrt_cffi.cdef(
     """
     #define AXCL_MAX_DEVICE_COUNT 256
     typedef int32_t axclError;
@@ -25,7 +23,7 @@ O.cdef(
 )
 
 # axcl_rt_type.h
-O.cdef(
+axclrt_cffi.cdef(
     """
     typedef struct axclrtDeviceList {
         uint32_t num;
@@ -50,7 +48,7 @@ O.cdef(
 )
 
 # axcl_rt_engine_type.h
-O.cdef(
+axclrt_cffi.cdef(
     """
     #define AXCLRT_ENGINE_MAX_DIM_CNT 32
     typedef void* axclrtEngineIOInfo;
@@ -63,6 +61,32 @@ O.cdef(
         AXCL_VNPU_LITTLE_BIG = 3,
     } axclrtEngineVNpuKind;
     
+    typedef enum axclrtEngineDataType {
+        AXCL_DATA_TYPE_NONE = 0,
+        AXCL_DATA_TYPE_INT4 = 1,
+        AXCL_DATA_TYPE_UINT4 = 2,
+        AXCL_DATA_TYPE_INT8 = 3,
+        AXCL_DATA_TYPE_UINT8 = 4,
+        AXCL_DATA_TYPE_INT16 = 5,
+        AXCL_DATA_TYPE_UINT16 = 6,
+        AXCL_DATA_TYPE_INT32 = 7,
+        AXCL_DATA_TYPE_UINT32 = 8,
+        AXCL_DATA_TYPE_INT64 = 9,
+        AXCL_DATA_TYPE_UINT64 = 10,
+        AXCL_DATA_TYPE_FP4 = 11,
+        AXCL_DATA_TYPE_FP8 = 12,
+        AXCL_DATA_TYPE_FP16 = 13,
+        AXCL_DATA_TYPE_BF16 = 14,
+        AXCL_DATA_TYPE_FP32 = 15,
+        AXCL_DATA_TYPE_FP64 = 16,
+    } axclrtEngineDataType;
+    
+    typedef enum axclrtEngineDataLayout {
+        AXCL_DATA_LAYOUT_NONE = 0,
+        AXCL_DATA_LAYOUT_NHWC = 0,
+        AXCL_DATA_LAYOUT_NCHW = 1,
+    } axclrtEngineDataLayout;
+    
     typedef struct axclrtEngineIODims {
         int32_t dimCount;
         int32_t dims[AXCLRT_ENGINE_MAX_DIM_CNT];
@@ -70,67 +94,8 @@ O.cdef(
 """
 )
 
-# ax_model_runner_axcl.cpp
-O.cdef(
-    """
-    typedef enum
-    {
-        AX_ENGINE_ABST_DEFAULT = 0,
-        AX_ENGINE_ABST_CACHED = 1,
-    } AX_ENGINE_ALLOC_BUFFER_STRATEGY_T;
-
-    typedef struct
-    {
-        int nIndex;
-        int nSize;
-        void *pBuf;
-        void *pVirAddr;
-    
-        const char *Name;
-    
-        axclrtEngineIODims dims;
-    } AXCL_IO_BUF_T;
-    
-    typedef struct
-    {
-        uint32_t nInputSize;
-        uint32_t nOutputSize;
-        AXCL_IO_BUF_T *pInputs;
-        AXCL_IO_BUF_T *pOutputs;
-    } AXCL_IO_DATA_T;
-"""
-)
-
-# ax_model_runner.hpp
-O.cdef(
-    """
-    typedef struct
-    {
-        const char * sName;
-        unsigned int nIdx;
-        unsigned int vShape[AXCLRT_ENGINE_MAX_DIM_CNT];
-        unsigned int vShapeSize;
-        int nSize;
-        unsigned long long phyAddr;
-        void *pVirAddr;
-    } ax_runner_tensor_t;
-"""
-)
-
-# stdlib.h/string.h
-O.cdef(
-    """
-    void free (void *__ptr);
-    void *malloc(size_t size);
-    void *memset (void *__s, int __c, size_t __n);
-    void *memcpy (void * __dest, const void * __src, size_t __n);
-"""
-)
-
-
-
 # axcl.h
-O.cdef(
+axclrt_cffi.cdef(
     """
     axclError axclInit(const char *config);
     axclError axclFinalize();
@@ -138,7 +103,7 @@ O.cdef(
 )
 
 # axcl_rt.h
-O.cdef(
+axclrt_cffi.cdef(
     """
     axclError axclrtGetVersion(int32_t *major, int32_t *minor, int32_t *patch);
     const char *axclrtGetSocName();
@@ -146,7 +111,7 @@ O.cdef(
 )
 
 # axcl_rt_device.h
-O.cdef(
+axclrt_cffi.cdef(
     """
     axclError axclrtGetDeviceList(axclrtDeviceList *deviceList);
     axclError axclrtSetDevice(int32_t deviceId);
@@ -155,7 +120,7 @@ O.cdef(
 )
 
 # axcl_rt_context.h
-O.cdef(
+axclrt_cffi.cdef(
     """
     axclError axclrtCreateContext(axclrtContext *context, int32_t deviceId);
     axclError axclrtDestroyContext(axclrtContext context);
@@ -166,34 +131,54 @@ O.cdef(
 )
 
 # axcl_rt_engine.h
-O.cdef(
+axclrt_cffi.cdef(
     """
     axclError axclrtEngineInit(axclrtEngineVNpuKind npuKind);
-    axclError axclrtEngineLoadFromMem(const void *model, uint64_t modelSize, uint64_t *modelId);
-    axclError axclrtEngineCreateContext(uint64_t modelId, uint64_t *contextId);
     axclError axclrtEngineGetVNpuKind(axclrtEngineVNpuKind *npuKind);
+    axclError axclrtEngineFinalize();
+
+    axclError axclrtEngineLoadFromFile(const char *modelPath, uint64_t *modelId);
+    axclError axclrtEngineLoadFromMem(const void *model, uint64_t modelSize, uint64_t *modelId);
     const char* axclrtEngineGetModelCompilerVersion(uint64_t modelId);
+    axclError axclrtEngineUnload(uint64_t modelId);
+
     axclError axclrtEngineGetIOInfo(uint64_t modelId, axclrtEngineIOInfo *ioInfo);
     axclError axclrtEngineGetShapeGroupsCount(axclrtEngineIOInfo ioInfo, int32_t *count);
-    axclError axclrtEngineCreateIO(axclrtEngineIOInfo ioInfo, axclrtEngineIO *io);
+
     uint32_t axclrtEngineGetNumInputs(axclrtEngineIOInfo ioInfo);
     uint32_t axclrtEngineGetNumOutputs(axclrtEngineIOInfo ioInfo);
+
     uint64_t axclrtEngineGetInputSizeByIndex(axclrtEngineIOInfo ioInfo, uint32_t group, uint32_t index);
-    axclError axclrtEngineGetInputDims(axclrtEngineIOInfo ioInfo, uint32_t group, uint32_t index, axclrtEngineIODims *dims);
-    const char *axclrtEngineGetInputNameByIndex(axclrtEngineIOInfo ioInfo, uint32_t index);
-    axclError axclrtEngineSetInputBufferByIndex(axclrtEngineIO io, uint32_t index, const void *dataBuffer, uint64_t size);
     uint64_t axclrtEngineGetOutputSizeByIndex(axclrtEngineIOInfo ioInfo, uint32_t group, uint32_t index);
+
+    axclError axclrtEngineGetInputDims(axclrtEngineIOInfo ioInfo, uint32_t group, uint32_t index, axclrtEngineIODims *dims);
     axclError axclrtEngineGetOutputDims(axclrtEngineIOInfo ioInfo, uint32_t group, uint32_t index, axclrtEngineIODims *dims);
+
+    const char *axclrtEngineGetInputNameByIndex(axclrtEngineIOInfo ioInfo, uint32_t index);
     const char *axclrtEngineGetOutputNameByIndex(axclrtEngineIOInfo ioInfo, uint32_t index);
-    axclError axclrtEngineSetOutputBufferByIndex(axclrtEngineIO io, uint32_t index, const void *dataBuffer, uint64_t size);
-    axclError axclrtEngineExecute(uint64_t modelId, uint64_t contextId, uint32_t group, axclrtEngineIO io);
+
+    int32_t axclrtEngineGetInputDataType(axclrtEngineIOInfo ioInfo, uint32_t index, axclrtEngineDataType *type);
+    int32_t axclrtEngineGetOutputDataType(axclrtEngineIOInfo ioInfo, uint32_t index, axclrtEngineDataType *type);
+
+    int32_t axclrtEngineGetInputDataLayout(axclrtEngineIOInfo ioInfo, uint32_t index, axclrtEngineDataLayout *layout);
+    int32_t axclrtEngineGetOutputDataLayout(axclrtEngineIOInfo ioInfo, uint32_t index, axclrtEngineDataLayout *layout);
+
+    axclError axclrtEngineCreateIO(axclrtEngineIOInfo ioInfo, axclrtEngineIO *io);
     axclError axclrtEngineDestroyIO(axclrtEngineIO io);
-    axclError axclrtEngineUnload(uint64_t modelId);
+
+    axclError axclrtEngineSetInputBufferByIndex(axclrtEngineIO io, uint32_t index, const void *dataBuffer, uint64_t size);
+    axclError axclrtEngineSetOutputBufferByIndex(axclrtEngineIO io, uint32_t index, const void *dataBuffer, uint64_t size);
+    axclError axclrtEngineGetInputBufferByIndex(axclrtEngineIO io, uint32_t index, void **dataBuffer, uint64_t *size);
+    axclError axclrtEngineGetOutputBufferByIndex(axclrtEngineIO io, uint32_t index, void **dataBuffer, uint64_t *size);
+
+    axclError axclrtEngineCreateContext(uint64_t modelId, uint64_t *contextId);
+
+    axclError axclrtEngineExecute(uint64_t modelId, uint64_t contextId, uint32_t group, axclrtEngineIO io);
 """
 )
 
 # axcl_rt_memory.h
-O.cdef(
+axclrt_cffi.cdef(
     """
     axclError axclrtMalloc(void **devPtr, size_t size, axclrtMemMallocPolicy policy);
     axclError axclrtMallocCached(void **devPtr, size_t size, axclrtMemMallocPolicy policy);
@@ -209,5 +194,5 @@ assert (
         rt_path is not None
 ), f"Failed to find library {rt_name}. Please ensure it is installed and in the library path."
 
-R = O.dlopen(rt_path)
-assert R is not None, f"Failed to load library {rt_path}. Please ensure it is installed and in the library path."
+axclrt_lib = axclrt_cffi.dlopen(rt_path)
+assert axclrt_lib is not None, f"Failed to load library {rt_path}. Please ensure it is installed and in the library path."

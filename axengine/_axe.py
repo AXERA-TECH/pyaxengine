@@ -4,61 +4,142 @@
 # may not be copied or distributed in any isomorphic form without the prior
 # written consent of Axera Semiconductor Co., Ltd.
 #
-from ._session import BaseInferenceSession
-from ._types import VNPUType, ModelType, ChipType
-from ._types import _transform_dtype
-from ._node import NodeArg
 
+import atexit
 import os
+from typing import Any, Sequence
+
+import ml_dtypes as mldt
 import numpy as np
 
-__all__: ["InferenceSession"]
+from ._axe_capi import sys_lib, engine_cffi, engine_lib
+from ._axe_types import VNPUType, ModelType, ChipType
+from ._base_session import Session, SessionOptions
+from ._node import NodeArg
+
+__all__: ["AXEngineSession"]
+
+_is_sys_initialized = False
+_is_engine_initialized = False
 
 
-class InferenceSession(BaseInferenceSession):
+def _transform_dtype(dtype):
+    if dtype == engine_cffi.cast("AX_ENGINE_DATA_TYPE_T", engine_lib.AX_ENGINE_DT_UINT8):
+        return np.dtype(np.uint8)
+    elif dtype == engine_cffi.cast("AX_ENGINE_DATA_TYPE_T", engine_lib.AX_ENGINE_DT_SINT8):
+        return np.dtype(np.int8)
+    elif dtype == engine_cffi.cast("AX_ENGINE_DATA_TYPE_T", engine_lib.AX_ENGINE_DT_UINT16):
+        return np.dtype(np.uint16)
+    elif dtype == engine_cffi.cast("AX_ENGINE_DATA_TYPE_T", engine_lib.AX_ENGINE_DT_SINT16):
+        return np.dtype(np.int16)
+    elif dtype == engine_cffi.cast("AX_ENGINE_DATA_TYPE_T", engine_lib.AX_ENGINE_DT_UINT32):
+        return np.dtype(np.uint32)
+    elif dtype == engine_cffi.cast("AX_ENGINE_DATA_TYPE_T", engine_lib.AX_ENGINE_DT_SINT32):
+        return np.dtype(np.int32)
+    elif dtype == engine_cffi.cast("AX_ENGINE_DATA_TYPE_T", engine_lib.AX_ENGINE_DT_FLOAT32):
+        return np.dtype(np.float32)
+    elif dtype == engine_cffi.cast("AX_ENGINE_DATA_TYPE_T", engine_lib.AX_ENGINE_DT_BFLOAT16):
+        return np.dtype(mldt.bfloat16)
+    else:
+        raise ValueError(f"Unsupported data type '{dtype}'.")
+
+
+def _check_cffi_func_exists(lib, func_name):
+    try:
+        getattr(lib, func_name)
+        return True
+    except AttributeError:
+        return False
+
+
+def _get_chip_type():
+    if not _check_cffi_func_exists(engine_lib, "AX_ENGINE_SetAffinity"):
+        return ChipType.M57H
+    elif not _check_cffi_func_exists(engine_lib, "AX_ENGINE_GetTotalOps"):
+        return ChipType.MC50
+    else:
+        return ChipType.MC20E
+
+
+def _get_version():
+    engine_version = engine_lib.AX_ENGINE_GetVersion()
+    return engine_cffi.string(engine_version).decode("utf-8")
+
+
+def _get_vnpu_type() -> VNPUType:
+    vnpu_type = engine_cffi.new("AX_ENGINE_NPU_ATTR_T *")
+    ret = engine_lib.AX_ENGINE_GetVNPUAttr(vnpu_type)
+    if 0 != ret:
+        raise RuntimeError("Failed to get VNPU attribute.")
+    return VNPUType(vnpu_type.eHardMode)
+
+
+def _initialize_engine():
+    global _is_sys_initialized, _is_engine_initialized
+
+    ret = sys_lib.AX_SYS_Init()
+    if ret != 0:
+        raise RuntimeError("Failed to initialize ax sys.")
+    _is_sys_initialized = True
+
+    # disabled mode by default
+    vnpu_type = engine_cffi.new("AX_ENGINE_NPU_ATTR_T *")
+    ret = engine_lib.AX_ENGINE_GetVNPUAttr(vnpu_type)
+    if 0 != ret:
+        # this means the NPU was not initialized
+        vnpu_type.eHardMode = engine_cffi.cast(
+            "AX_ENGINE_NPU_MODE_T", VNPUType.DISABLED.value
+        )
+    ret = engine_lib.AX_ENGINE_Init(vnpu_type)
+    if ret != 0:
+        raise RuntimeError("Failed to initialize ax sys engine.")
+    _is_engine_initialized = True
+
+    print(f"[INFO] Chip type: {_get_chip_type()}")
+    print(f"[INFO] VNPU type: {_get_vnpu_type()}")
+    print(f"[INFO] Engine version: {_get_version()}")
+
+
+def _finalize_engine():
+    global _is_sys_initialized, _is_engine_initialized
+
+    if _is_engine_initialized:
+        engine_lib.AX_ENGINE_Deinit()
+    if _is_sys_initialized:
+        sys_lib.AX_SYS_Deinit()
+
+
+_initialize_engine()
+atexit.register(_finalize_engine)
+
+
+class AXEngineSession(Session):
     def __init__(
-        self,
-        path_or_bytes: str | bytes | os.PathLike,
+            self,
+            path_or_bytes: str | bytes | os.PathLike,
+            sess_options: SessionOptions | None = None,
+            provider_options: dict[Any, Any] | None = None,
+            **kwargs,
     ) -> None:
-        from . import _ax_capi as _capi
-        from . import _ax_chip as _chip
+        super().__init__()
 
-        super(BaseInferenceSession).__init__()
-
-        # load shared library
-        self._sys_lib = _capi.S
-        self._sys_ffi = _capi.M
-        self._engine_lib = _capi.E
-        self._engine_ffi = _capi.N
-
-        # chip type
-        self._chip_type = _chip.T
-        print(f"[INFO] Chip type: {self._chip_type}")
+        self._chip_type = _get_chip_type()
+        self._vnpu_type = _get_vnpu_type()
 
         # handle, context, info, io
-        self._handle = self._engine_ffi.new("uint64_t **")
-        self._context = self._engine_ffi.new("uint64_t **")
-        self._io = self._engine_ffi.new("AX_ENGINE_IO_T *")
-
-        # init ax sys & engine
-        ret = self._init()
-        if 0 != ret:
-            raise RuntimeError("Failed to initialize engine.")
-        print(f"[INFO] Engine version: {self._get_version()}")
-
-        # get vnpu type
-        self._vnpu_type = self._get_vnpu_type()
-        print(f"[INFO] VNPU type: {self._vnpu_type}")
+        self._handle = engine_cffi.new("uint64_t **")
+        self._context = engine_cffi.new("uint64_t **")
+        self._io = engine_cffi.new("AX_ENGINE_IO_T *")
 
         # model buffer, almost copied from onnx runtime
         if isinstance(path_or_bytes, (str, os.PathLike)):
             self._model_name = os.path.splitext(os.path.basename(path_or_bytes))[0]
             with open(path_or_bytes, "rb") as f:
                 data = f.read()
-            self._model_buffer = self._engine_ffi.new("char[]", data)
+            self._model_buffer = engine_cffi.new("char[]", data)
             self._model_buffer_size = len(data)
         elif isinstance(path_or_bytes, bytes):
-            self._model_buffer = self._engine_ffi.new("char[]", path_or_bytes)
+            self._model_buffer = engine_cffi.new("char[]", path_or_bytes)
             self._model_buffer_size = len(path_or_bytes)
         else:
             raise TypeError(f"Unable to load model from type '{type(path_or_bytes)}'")
@@ -91,8 +172,8 @@ class InferenceSession(BaseInferenceSession):
                         f"Model type '{self._model_type}' is not allowed when vnpu is inited as {self._vnpu_type}."
                     )
             if (
-                self._vnpu_type is VNPUType.BIG_LITTLE
-                or self._vnpu_type is VNPUType.LITTLE_BIG
+                    self._vnpu_type is VNPUType.BIG_LITTLE
+                    or self._vnpu_type is VNPUType.LITTLE_BIG
             ):
                 if self._model_type is ModelType.TRIPLE:
                     raise ValueError(
@@ -129,13 +210,13 @@ class InferenceSession(BaseInferenceSession):
 
         # fill model io
         self._align = 128
-        self._cmm_token = self._engine_ffi.new("AX_S8[]", b"PyEngine")
+        self._cmm_token = engine_cffi.new("AX_S8[]", b"PyEngine")
         self._io[0].nInputSize = len(self.get_inputs())
         self._io[0].nOutputSize = len(self.get_outputs())
-        self._io[0].pInputs = self._engine_ffi.new(
+        self._io[0].pInputs = engine_cffi.new(
             "AX_ENGINE_IO_BUFFER_T[{}]".format(self._io[0].nInputSize)
         )
-        self._io[0].pOutputs = self._engine_ffi.new(
+        self._io[0].pOutputs = engine_cffi.new(
             "AX_ENGINE_IO_BUFFER_T[{}]".format(self._io[0].nOutputSize)
         )
         for i in range(len(self.get_inputs())):
@@ -143,9 +224,9 @@ class InferenceSession(BaseInferenceSession):
             for j in range(self._shape_count):
                 max_buf = max(max_buf, self._info[j][0].pInputs[i].nSize)
             self._io[0].pInputs[i].nSize = max_buf
-            phy = self._engine_ffi.new("AX_U64*")
-            vir = self._engine_ffi.new("AX_VOID**")
-            ret = self._sys_lib.AX_SYS_MemAllocCached(
+            phy = engine_cffi.new("AX_U64*")
+            vir = engine_cffi.new("AX_VOID**")
+            ret = sys_lib.AX_SYS_MemAllocCached(
                 phy, vir, self._io[0].pInputs[i].nSize, self._align, self._cmm_token
             )
             if 0 != ret:
@@ -157,9 +238,9 @@ class InferenceSession(BaseInferenceSession):
             for j in range(self._shape_count):
                 max_buf = max(max_buf, self._info[j][0].pOutputs[i].nSize)
             self._io[0].pOutputs[i].nSize = max_buf
-            phy = self._engine_ffi.new("AX_U64*")
-            vir = self._engine_ffi.new("AX_VOID**")
-            ret = self._sys_lib.AX_SYS_MemAllocCached(
+            phy = engine_cffi.new("AX_U64*")
+            vir = engine_cffi.new("AX_VOID**")
+            ret = sys_lib.AX_SYS_MemAllocCached(
                 phy, vir, self._io[0].pOutputs[i].nSize, self._align, self._cmm_token
             )
             if 0 != ret:
@@ -167,42 +248,12 @@ class InferenceSession(BaseInferenceSession):
             self._io[0].pOutputs[i].phyAddr = phy[0]
             self._io[0].pOutputs[i].pVirAddr = vir[0]
 
-    def _init(self, vnpu=VNPUType.DISABLED):  # vnpu type, the default is disabled
-        ret = self._sys_lib.AX_SYS_Init()
-        if 0 != ret:
-            raise RuntimeError("Failed to initialize system.")
-
-        # get vnpu type first, check if npu was initialized
-        vnpu_type = self._engine_ffi.new("AX_ENGINE_NPU_ATTR_T *")
-        ret = self._engine_lib.AX_ENGINE_GetVNPUAttr(vnpu_type)
-        if 0 != ret:
-            # this means the NPU was not initialized
-            vnpu_type.eHardMode = self._engine_ffi.cast(
-                "AX_ENGINE_NPU_MODE_T", vnpu.value
-            )
-
-        return self._engine_lib.AX_ENGINE_Init(vnpu_type)
-
-    def _final(self):
-        if self._handle[0] is not None:
-            self._unload()
-        self._engine_lib.AX_ENGINE_Deinit()
-        return self._sys_lib.AX_SYS_Deinit()
-
-    def _get_version(self):
-        engine_version = self._engine_lib.AX_ENGINE_GetVersion()
-        return self._engine_ffi.string(engine_version).decode("utf-8")
-
-    def _get_vnpu_type(self) -> VNPUType:
-        vnpu_type = self._engine_ffi.new("AX_ENGINE_NPU_ATTR_T *")
-        ret = self._engine_lib.AX_ENGINE_GetVNPUAttr(vnpu_type)
-        if 0 != ret:
-            raise RuntimeError("Failed to get VNPU attribute.")
-        return VNPUType(vnpu_type.eHardMode)
+    def __del__(self):
+        self._unload()
 
     def _get_model_type(self) -> ModelType:
-        model_type = self._engine_ffi.new("AX_ENGINE_MODEL_TYPE_T *")
-        ret = self._engine_lib.AX_ENGINE_GetModelType(
+        model_type = engine_cffi.new("AX_ENGINE_MODEL_TYPE_T *")
+        ret = engine_lib.AX_ENGINE_GetModelType(
             self._model_buffer, self._model_buffer_size, model_type
         )
         if 0 != ret:
@@ -210,23 +261,23 @@ class InferenceSession(BaseInferenceSession):
         return ModelType(model_type[0])
 
     def _get_model_tool_version(self):
-        model_tool_version = self._engine_lib.AX_ENGINE_GetModelToolsVersion(
+        model_tool_version = engine_lib.AX_ENGINE_GetModelToolsVersion(
             self._handle[0]
         )
-        return self._engine_ffi.string(model_tool_version).decode("utf-8")
+        return engine_cffi.string(model_tool_version).decode("utf-8")
 
     def _load(self):
-        extra = self._engine_ffi.new("AX_ENGINE_HANDLE_EXTRA_T *")
-        extra_name = self._engine_ffi.new("char[]", self._model_name.encode("utf-8"))
+        extra = engine_cffi.new("AX_ENGINE_HANDLE_EXTRA_T *")
+        extra_name = engine_cffi.new("char[]", self._model_name.encode("utf-8"))
         extra.pName = extra_name
 
         # for onnx runtime do not support one model multiple context running in multi-thread as far as I know, so
         # the engine handle and context will create only once
-        ret = self._engine_lib.AX_ENGINE_CreateHandleV2(
+        ret = engine_lib.AX_ENGINE_CreateHandleV2(
             self._handle, self._model_buffer, self._model_buffer_size, extra
         )
         if 0 == ret:
-            ret = self._engine_lib.AX_ENGINE_CreateContextV2(
+            ret = engine_lib.AX_ENGINE_CreateContextV2(
                 self._handle[0], self._context
             )
         return ret
@@ -234,15 +285,15 @@ class InferenceSession(BaseInferenceSession):
     def _get_info(self):
         total_info = []
         if 1 == self._shape_count:
-            info = self._engine_ffi.new("AX_ENGINE_IO_INFO_T **")
-            ret = self._engine_lib.AX_ENGINE_GetIOInfo(self._handle[0], info)
+            info = engine_cffi.new("AX_ENGINE_IO_INFO_T **")
+            ret = engine_lib.AX_ENGINE_GetIOInfo(self._handle[0], info)
             if 0 != ret:
                 raise RuntimeError("Failed to get model shape.")
             total_info.append(info)
         else:
             for i in range(self._shape_count):
-                info = self._engine_ffi.new("AX_ENGINE_IO_INFO_T **")
-                ret = self._engine_lib.AX_ENGINE_GetGroupIOInfo(
+                info = engine_cffi.new("AX_ENGINE_IO_INFO_T **")
+                ret = engine_lib.AX_ENGINE_GetGroupIOInfo(
                     self._handle[0], i, info
                 )
                 if 0 != ret:
@@ -251,53 +302,44 @@ class InferenceSession(BaseInferenceSession):
         return total_info
 
     def _get_shape_count(self):
-        count = self._engine_ffi.new("AX_U32 *")
-        ret = self._engine_lib.AX_ENGINE_GetGroupIOInfoCount(self._handle[0], count)
+        count = engine_cffi.new("AX_U32 *")
+        ret = engine_lib.AX_ENGINE_GetGroupIOInfoCount(self._handle[0], count)
         if 0 != ret:
             raise RuntimeError("Failed to get model shape group.")
         return count[0]
 
     def _unload(self):
-        return self._engine_lib.AX_ENGINE_DestroyHandle(self._handle[0])
+        if self._handle[0] is not None:
+            engine_lib.AX_ENGINE_DestroyHandle(self._handle[0])
+        self._handle[0] = engine_cffi.NULL
+
+    def _get_io(self, io_type: str):
+        io_info = []
+        for group in range(self._shape_count):
+            one_group_io = []
+            for index in range(getattr(self._info[group][0], f'n{io_type}Size')):
+                current_io = getattr(self._info[group][0], f'p{io_type}s')[index]
+                name = engine_cffi.string(current_io.pName).decode("utf-8")
+                shape = [current_io.pShape[i] for i in range(current_io.nShapeSize)]
+                dtype = _transform_dtype(current_io.eDataType)
+                meta = NodeArg(name, dtype, shape)
+                one_group_io.append(meta)
+            io_info.append(one_group_io)
+        return io_info
 
     def _get_inputs(self):
-        inputs = []
-        for group in range(self._shape_count):
-            one_group_input = []
-            for index in range(self._info[group][0].nInputSize):
-                current_input = self._info[group][0].pInputs[index]
-                name = self._engine_ffi.string(current_input.pName).decode("utf-8")
-                shape = []
-                for i in range(current_input.nShapeSize):
-                    shape.append(current_input.pShape[i])
-                dtype = _transform_dtype(
-                    self._engine_ffi, self._engine_lib, current_input.eDataType
-                )
-                meta = NodeArg(name, dtype, shape)
-                one_group_input.append(meta)
-            inputs.append(one_group_input)
-        return inputs
+        return self._get_io('Input')
 
     def _get_outputs(self):
-        outputs = []
-        for group in range(self._shape_count):
-            one_group_output = []
-            for index in range(self._info[group][0].nOutputSize):
-                current_output = self._info[group][0].pOutputs[index]
-                name = self._engine_ffi.string(current_output.pName).decode("utf-8")
-                shape = []
-                for i in range(current_output.nShapeSize):
-                    shape.append(current_output.pShape[i])
-                dtype = _transform_dtype(
-                    self._engine_ffi, self._engine_lib, current_output.eDataType
-                )
-                meta = NodeArg(name, dtype, shape)
-                one_group_output.append(meta)
-            outputs.append(one_group_output)
-        return outputs
+        return self._get_io('Output')
 
-    def run(self, output_names, input_feed, run_options=None):
-        self._validate_input(list(input_feed.keys()))
+    def run(
+            self,
+            output_names: list[str],
+            input_feed: dict[str, np.ndarray],
+            run_options=None
+    ):
+        self._validate_input(input_feed)
         self._validate_output(output_names)
 
         if None is output_names:
@@ -308,20 +350,21 @@ class InferenceSession(BaseInferenceSession):
             for i, one in enumerate(self.get_inputs()):
                 if one.name == key:
                     assert (
-                        list(one.shape) == list(npy.shape) and one.dtype == npy.dtype
-                    ), f"model inputs({key}) expect shape {one.shape} and dtype {one.dtype}, howerver gets input with shape {npy.shape} and dtype {npy.dtype}"
+                            list(one.shape) == list(npy.shape) and one.dtype == npy.dtype
+                    ), f"model inputs({key}) expect shape {one.shape} and dtype {one.dtype}, however gets input with shape {npy.shape} and dtype {npy.dtype}"
 
                     if not (
-                        not npy.flags.c_contiguous
-                        and npy.flags.f_contiguous
-                        and npy.flags.contiguous
+                            not npy.flags.c_contiguous
+                            and npy.flags.f_contiguous
+                            and npy.flags.contiguous
                     ):
                         npy = np.ascontiguousarray(npy)
-                    npy_ptr = self._engine_ffi.cast("void *", npy.ctypes.data)
-                    self._engine_ffi.memmove(
+                    npy_ptr = engine_cffi.cast("void *", npy.ctypes.data)
+
+                    engine_cffi.memmove(
                         self._io[0].pInputs[i].pVirAddr, npy_ptr, npy.nbytes
                     )
-                    self._sys_lib.AX_SYS_MflushCache(
+                    sys_lib.AX_SYS_MflushCache(
                         self._io[0].pInputs[i].phyAddr,
                         self._io[0].pInputs[i].pVirAddr,
                         self._io[0].pInputs[i].nSize,
@@ -329,7 +372,7 @@ class InferenceSession(BaseInferenceSession):
                     break
 
         # execute model
-        ret = self._engine_lib.AX_ENGINE_RunSyncV2(
+        ret = engine_lib.AX_ENGINE_RunSyncV2(
             self._handle[0], self._context[0], self._io
         )
 
@@ -337,13 +380,13 @@ class InferenceSession(BaseInferenceSession):
         outputs = []
         if 0 == ret:
             for i in range(len(self.get_outputs())):
-                self._sys_lib.AX_SYS_MinvalidateCache(
+                sys_lib.AX_SYS_MinvalidateCache(
                     self._io[0].pOutputs[i].phyAddr,
                     self._io[0].pOutputs[i].pVirAddr,
                     self._io[0].pOutputs[i].nSize,
                 )
                 npy = np.frombuffer(
-                    self._engine_ffi.buffer(
+                    engine_cffi.buffer(
                         self._io[0].pOutputs[i].pVirAddr, self._io[0].pOutputs[i].nSize
                     ),
                     dtype=self.get_outputs()[i].dtype,
