@@ -93,7 +93,6 @@ def main(model_path, image_path, middle_step_size, final_step_size, k, repeat_ti
     output = None
     for i in range(repeat_times):
         t1 = time.time()
-        input_tensor = input_tensor.copy()
         output = session.run(None, {input_name: input_tensor})
         t2 = time.time()
         time_costs.append((t2 - t1) * 1000)

@@ -5,13 +5,18 @@
 # written consent of Axera Semiconductor Co., Ltd.
 #
 
-
 import argparse
-import cv2
-import random
 import colorsys
-import axengine as axe
+import os
+import random
+import sys
+import time
+
+import cv2
 import numpy as np
+
+import axengine as axe
+from axengine import axclrt_provider_name, axengine_provider_name
 
 CONF_THRESH = 0.45
 IOU_THRESH = 0.45
@@ -23,7 +28,6 @@ ANCHORS = [
 ]
 NUM_OUTPUTS = 85
 INPUT_SHAPE = [640, 640]
-
 
 CLASS_NAMES = [
     "person",
@@ -193,13 +197,13 @@ COCO_CATEGORIES = {
 
 
 def letterbox_yolov5(
-    im,
-    new_shape=(640, 640),
-    color=(114, 114, 114),
-    auto=True,
-    scaleFill=False,
-    scaleup=True,
-    stride=32,
+        im,
+        new_shape=(640, 640),
+        color=(114, 114, 114),
+        auto=True,
+        scaleFill=False,
+        scaleup=True,
+        stride=32,
 ):
     # Resize and pad image while meeting stride-multiple constraints
     shape = im.shape[:2]  # current shape [height, width]
@@ -236,7 +240,6 @@ def letterbox_yolov5(
 
 
 def pre_processing(image_raw, img_shape):
-
     img = letterbox_yolov5(image_raw, img_shape, stride=32, auto=False)[0]
     img = img[:, :, ::-1]
     img = img[np.newaxis, ...]
@@ -275,16 +278,14 @@ def draw_bbox(image, bboxes, classes=None, show_label=True, threshold=0.1):
         c1, c2 = (coor[0], coor[1]), (coor[2], coor[3])
         cv2.rectangle(image, c1, c2, bbox_color, bbox_thick)
         print(
-            f"bbox:{coor}, score:{score:5.4f}, label: {CLASS_NAMES[class_ind]:<10}, class: {class_ind}"
+            f"  {class_ind:>3}: {CLASS_NAMES[class_ind]:<10}: {coor}, score: {score*100:3.2f}%"
         )
         if show_label:
             bbox_mess = "%s: %.2f" % (CLASS_NAMES[class_ind], score)
             t_size = cv2.getTextSize(
                 bbox_mess, 0, fontScale, thickness=bbox_thick // 2
             )[0]
-            cv2.rectangle(
-                image, c1, (c1[0] + t_size[0], c1[1] - t_size[1] - 3), bbox_color, -1
-            )
+            cv2.rectangle(image, c1, (c1[0] + t_size[0], c1[1] - t_size[1] - 3), bbox_color, -1)
 
             cv2.putText(
                 image,
@@ -373,7 +374,7 @@ def nms(proposals, iou_threshold, conf_threshold, multi_label=False):
             best_bbox = cls_bboxes[max_ind]
             best_bboxes.append(best_bbox)
             cls_bboxes = np.concatenate(
-                [cls_bboxes[:max_ind], cls_bboxes[max_ind + 1 :]]
+                [cls_bboxes[:max_ind], cls_bboxes[max_ind + 1:]]
             )
             iou = bboxes_iou(best_bbox[np.newaxis, :4], cls_bboxes[:, :4])
             weight = np.ones((len(iou),), dtype=np.float32)
@@ -430,7 +431,7 @@ def scale_coords(img1_shape, coords, img0_shape, ratio_pad=None):
             img1_shape[0] / img0_shape[0], img1_shape[1] / img0_shape[1]
         )  # gain  = old / new
         pad = (img1_shape[1] - img0_shape[1] * gain) / 2, (
-            img1_shape[0] - img0_shape[0] * gain
+                img1_shape[0] - img0_shape[0] * gain
         ) / 2  # wh padding
     else:
         gain = ratio_pad[0][0]
@@ -444,7 +445,6 @@ def scale_coords(img1_shape, coords, img0_shape, ratio_pad=None):
 
 
 def post_processing(outputs, origin_shape, input_shape):
-
     proposals = gen_proposals(outputs)
     pred = nms(
         proposals, IOU_THRESH, CONF_THRESH, multi_label=True
@@ -453,44 +453,96 @@ def post_processing(outputs, origin_shape, input_shape):
     return pred
 
 
-def detect_yolov5(model_path, image_path, save_path, backend='auto', device_id=-1):
+def detect_yolov5(model_path, image_path, save_path, repeat_times, selected_provider='AUTO', selected_device_id=0):
+    if selected_provider == 'AUTO':
+        # Use AUTO to let the pyengine choose the first available provider
+        session = axe.InferenceSession(model_path)
+    else:
+        providers = []
+        if selected_provider == axclrt_provider_name:
+            provider_options = {"device_id": selected_device_id}
+            providers.append((axclrt_provider_name, provider_options))
+        if selected_provider == axengine_provider_name:
+            providers.append(axengine_provider_name)
+        session = axe.InferenceSession(model_path, providers=providers)
 
-    if backend == 'auto':
-        session = axe.InferenceSession(model_path, device_id)
-    elif backend == 'ax':
-        session = axe.AXInferenceSession(model_path)
-    elif backend == 'axcl':
-        session = axe.AXCLInferenceSession(model_path, device_id)
     image_data = cv2.imread(image_path)
     inputs, origin_shape = pre_processing(image_data, (640, 640))
     inputs = np.ascontiguousarray(inputs)
-    results = session.run(None, {"images": inputs})
+
+    print("  ------------------------------------------------------")
+    time_costs = []
+    results = None
+    for i in range(repeat_times):
+        t1 = time.time()
+        results = session.run(None, {"images": inputs})
+        t2 = time.time()
+        time_costs.append((t2 - t1) * 1000)
+
     det = post_processing(results, origin_shape, (640, 640))
     ret_image = draw_bbox(image_data, det)
     cv2.imwrite(save_path, ret_image)
 
-
-def parse_args() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="yolov5 example")
-    parser.add_argument("--model", type=str, required=True, help="axmodel path")
-    parser.add_argument("--image_path", type=str, required=True, help="image path")
-    parser.add_argument('-b', '--backend', type=str, help='auto/ax/axcl', default='auto')
-    parser.add_argument('-d', '--device_id', type=int, help='axcl device no, -1: onboard npu, >0: axcl devices', default=0)
-    parser.add_argument(
-        "--save_path", type=str, default="save.jpg", help="save image path"
+    print("  ------------------------------------------------------")
+    print(
+        f"  min =   {min(time_costs):.3f} ms   max =   {max(time_costs):.3f} ms   avg =   {sum(time_costs) / len(time_costs):.3f} ms"
     )
-    args = parser.parse_args()
-    assert args.backend in ['auto', 'ax', 'axcl'], "backend must be ax or axcl"
-    assert args.device_id >= -1, "device_id must be greater than -1"
-    return args
+    print("  ------------------------------------------------------")
+
+
+class ExampleParser(argparse.ArgumentParser):
+    def error(self, message):
+        self.print_usage(sys.stderr)
+        print(f"\nError: {message}")
+        print("\nExample usage:")
+        print("  python3 yolov5.py -m <model_file> -i <image_file>")
+        print("  python3 yolov5.py -m /opt/data/npu/models/yolov5s.axmodel -i /opt/data/npu/images/dog.jpg")
+        print(
+            f"  python3 yolov5.py -m /opt/data/npu/models/yolov5s.axmodel -i /opt/data/npu/images/dog.jpg -p {axengine_provider_name}"
+        )
+        print(
+            f"  python3 yolov5.py -m /opt/data/npu/models/yolov5s.axmodel -i /opt/data/npu/images/dog.jpg -p {axclrt_provider_name}"
+        )
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    args = parse_args()
-    print(f"model             : {args.model}")
-    print(f"image path        : {args.image_path}")
-    print(f"backend           : {args.backend}")
-    print(f"device_id         : {args.device_id}")
-    print(f"save draw image to: {args.save_path}")
-    detect_yolov5(args.model, args.image_path, args.save_path, args.backend, args.device_id)
-# python3 yolov5_example.py --model /opt/data/npu/models/yolov5s.axmodel --image_path /opt/data/npu/images/dog.jpg --save_path ./detect_dog.jpg
+    ap = ExampleParser(description="YOLOv5 example")
+    ap.add_argument('-m', '--model-path', type=str, help='model path', required=True)
+    ap.add_argument('-i', '--image-path', type=str, help='image path', required=True)
+    ap.add_argument(
+        '-s', "--save-path", type=str, default="YOLOv5_OUT.jpg", help="detected  output image save path"
+    )
+    ap.add_argument('-r', '--repeat', type=int, help='repeat times', default=10)
+    ap.add_argument(
+        '-p',
+        '--provider',
+        type=str,
+        choices=["AUTO", f"{axclrt_provider_name}", f"{axengine_provider_name}"],
+        help=f'"AUTO", "{axclrt_provider_name}", "{axengine_provider_name}"',
+        default='AUTO'
+    )
+    ap.add_argument(
+        '-d',
+        '--device-id',
+        type=int,
+        help=R'axclrt device index, depends on how many cards inserted',
+        default=0
+    )
+    args = ap.parse_args()
+
+    model_file = args.model_path
+    image_file = args.image_path
+
+    # check if the model and image exist
+    assert os.path.exists(model_file), f"model file path {model_file} does not exist"
+    assert os.path.exists(image_file), f"image file path {image_file} does not exist"
+
+    save_path = args.save_path
+
+    repeat = args.repeat
+
+    provider = args.provider
+    device_id = args.device_id
+
+    detect_yolov5(model_file, image_file, save_path, repeat, provider, device_id)
