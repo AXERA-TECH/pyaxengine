@@ -49,7 +49,7 @@ root@ax650:~/samples# python3 classification.py -m /opt/data/npu/models/mobilene
     Class Index: 281, Score: 8.321
     Class Index: 287, Score: 7.924
   ------------------------------------------------------
-  min =   1.004 ms   max =   22.512 ms   avg =   1.252 ms
+  min =   0.890 ms   max =   22.417 ms   avg =   1.119 ms
   ------------------------------------------------------
 ```
 
@@ -73,7 +73,7 @@ root@ax650:~/samples# python3 classification.py -m /opt/data/npu/models/mobilene
     Class Index: 281, Score: 8.321
     Class Index: 287, Score: 7.924
   ------------------------------------------------------
-  min =   1.673 ms   max =   12.400 ms   avg =   1.805 ms
+  min =   1.587 ms   max =   12.624 ms   avg =   1.718 ms
   ------------------------------------------------------
 root@ax650:~/samples# python3 classification.py -m /opt/data/npu/models/mobilenetv2.axmodel -i /opt/data/npu/images/cat.jpg -p AxEngineExecutionProvider
 [INFO] Available providers:  ['AXCLRTExecutionProvider', 'AxEngineExecutionProvider']
@@ -91,7 +91,7 @@ root@ax650:~/samples# python3 classification.py -m /opt/data/npu/models/mobilene
     Class Index: 281, Score: 8.321
     Class Index: 287, Score: 7.924
   ------------------------------------------------------
-  min =   1.004 ms   max =   22.512 ms   avg =   1.252 ms
+  min =   0.897 ms   max =   22.542 ms   avg =   1.125 ms
   ------------------------------------------------------
 ```
 
