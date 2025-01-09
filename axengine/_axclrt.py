@@ -139,6 +139,11 @@ class AXCLRTSession(Session):
         self.soc_name = axclrt_cffi.string(axclrt_lib.axclrtGetSocName()).decode()
         print(f"[INFO] SOC Name: {self.soc_name}")
 
+        self._thread_context = axclrt_cffi.new("axclrtContext *")
+        ret = axclrt_lib.axclrtGetCurrentContext(self._thread_context)
+        if ret != 0:
+            raise RuntimeError("axclrtGetCurrentContext failed")
+
         # model handle, context, info, io
         self._model_id = axclrt_cffi.new("uint64_t *")
         self._context_id = axclrt_cffi.new("uint64_t *")
@@ -321,6 +326,10 @@ class AXCLRTSession(Session):
     ):
         self._validate_input(input_feed)
         self._validate_output(output_names)
+
+        ret = axclrt_lib.axclrtSetCurrentContext(self._thread_context[0])
+        if ret != 0:
+            raise RuntimeError("axclrtSetCurrentContext failed")
 
         if None is output_names:
             output_names = [o.name for o in self.get_outputs()]
