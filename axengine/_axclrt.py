@@ -23,6 +23,7 @@ __all__: ["AXCLRTSession"]
 
 _is_axclrt_initialized = False
 _is_axclrt_engine_initialized = False
+_all_model_instances = []
 
 
 def _transform_dtype(dtype):
@@ -55,6 +56,8 @@ def _initialize_axclrt():
 
 def _finalize_axclrt():
     global _is_axclrt_initialized, _is_axclrt_engine_initialized
+    for model_instance in _all_model_instances:
+        model_instance._unload()
     if _is_axclrt_engine_initialized:
         axclrt_lib.axclrtEngineFinalize()
         _is_axclrt_engine_initialized = False
@@ -167,8 +170,11 @@ class AXCLRTSession(Session):
         # prepare io
         self._io = self._prepare_io()
 
+        _all_model_instances.append(self)
+
     def __del__(self):
         self._unload()
+        _all_model_instances.remove(self)
 
     def _load(self, path_or_bytes):
         # model buffer, almost copied from onnx runtime
@@ -215,7 +221,7 @@ class AXCLRTSession(Session):
                 axclrt_lib.axclrtFree(dev_prt[0])
             axclrt_lib.axclrtEngineDestroyIO(self._io)
             self._io = None
-        if self._model_id[0] is not None:
+        if self._model_id[0] is not None and self._model_id[0] != 0:
             axclrt_lib.axclrtEngineUnload(self._model_id[0])
             self._model_id[0] = 0
 
