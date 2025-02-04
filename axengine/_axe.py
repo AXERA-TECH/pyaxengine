@@ -359,10 +359,9 @@ class AXEngineSession(Session):
                             and npy.flags.contiguous
                     ):
                         npy = np.ascontiguousarray(npy)
-                    npy_ptr = engine_cffi.cast("void *", npy.ctypes.data)
-
+                    buf = npy.tobytes()
                     engine_cffi.memmove(
-                        self._io[0].pInputs[i].pVirAddr, npy_ptr, npy.nbytes
+                        self._io[0].pInputs[i].pVirAddr, buf, len(buf)
                     )
                     sys_lib.AX_SYS_MflushCache(
                         self._io[0].pInputs[i].phyAddr,
