@@ -16,7 +16,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+      - if: github.event_name == 'push' 
+        uses: actions/checkout@v2
+      - if: github.event_name == 'pull_request' 
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
 
       - name: Run Black
         uses: actionsx/prettier@v2
