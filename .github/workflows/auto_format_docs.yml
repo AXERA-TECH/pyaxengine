@@ -16,23 +16,23 @@ jobs:
 
     steps:
       - name: Checkout code
-      - if: github.event_name == 'push' 
-        uses: actions/checkout@v2
-      - if: github.event_name == 'pull_request' 
-        uses: actions/checkout@v2
+      - if: github.event_name == 'push'
+        uses: actions/checkout@v4
+      - if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
 
       - name: Run Black
         uses: actionsx/prettier@v2
         with:
-          # prettier CLI arguments.
           args: --write "**/*.yml" "**/*.md"
 
       - name: Commit changes
         id: commit_changes
         uses: peter-evans/create-pull-request@v7
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: format & update for python
           committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
           author: ${{ github.actor }} <${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com>
