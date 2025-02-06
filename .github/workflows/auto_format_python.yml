@@ -44,4 +44,5 @@ jobs:
           git config --local user.email "github-actions@github.com"
           git add .
           git commit -m "Format Python code with Black" || echo "No changes to commit"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           git push origin HEAD:main
