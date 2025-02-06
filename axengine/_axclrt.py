@@ -350,11 +350,7 @@ class AXCLRTSession(Session):
                             list(one.shape) == list(npy.shape) and one.dtype == npy.dtype
                     ), f"model inputs({key}) expect shape {one.shape} and dtype {one.dtype}, howerver gets input with shape {npy.shape} and dtype {npy.dtype}"
 
-                    if not (
-                            not npy.flags.c_contiguous
-                            and npy.flags.f_contiguous
-                            and npy.flags.contiguous
-                    ):
+                    if not (npy.flags.c_contiguous or npy.flags.f_contiguous):
                         npy = np.ascontiguousarray(npy)
                     npy_ptr = axclrt_cffi.cast("void *", npy.ctypes.data)
                     ret = axclrt_lib.axclrtEngineGetInputBufferByIndex(self._io, i, dev_prt, dev_size)
