@@ -1,4 +1,4 @@
-name: Format Documents
+name: Auto FormatFormat Documents
 
 on:
   push:
