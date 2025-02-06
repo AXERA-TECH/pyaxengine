@@ -1,4 +1,4 @@
-name: Auto FormatFormat Documents
+name: Auto Format Config files & Docs
 
 on:
   push:
@@ -11,25 +11,20 @@ on:
 jobs:
   format:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          ref: ${{ github.head_ref }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
+      - name: Run Black
+        uses: actionsx/prettier@v2
         with:
-          node-version: "16"
-
-      - name: Install Prettier
-        run: |
-          npm install --save-dev prettier
-
-      - name: Format YAML and Markdown files
-        run: |
-          npx prettier --write "**/*.yml" "**/*.md"
+          # prettier CLI arguments.
+          args: --write "**/*.yml" "**/*.md"
 
       - name: Check for changes
         id: check_changes
@@ -37,10 +32,13 @@ jobs:
           git diff --exit-code || echo "has_diff=true" >> $GITHUB_OUTPUT
 
       - name: Commit changes
-        if: steps.check_changes.outputs.has_diff == 'true'
-        run: |
-          git config --local user.name "github-actions"
-          git config --local user.email "github-actions@github.com"
-          git add .
-          git commit -m "Format YAML and Markdown files with Prettier" || echo "No changes to commit"
-          git push origin HEAD:main
+        id: commit_changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+
+      - name: "Run if changes have been detected"
+        if: steps.commit_changes.outputs.changes_detected == 'true'
+        run: echo "Code formated."
+    
+      - name: "Run if no changes have been detected"
+        if: steps.commit_changes.outputs.changes_detected == 'false'
+        run: echo "No Changes."
