@@ -26,19 +26,12 @@ jobs:
           # prettier CLI arguments.
           args: --write "**/*.yml" "**/*.md"
 
-      - name: Check for changes
-        id: check_changes
-        run: |
-          git diff --exit-code || echo "has_diff=true" >> $GITHUB_OUTPUT
-
       - name: Commit changes
         id: commit_changes
-        uses: stefanzweifel/git-auto-commit-action@v5
-
-      - name: "Run if changes have been detected"
-        if: steps.commit_changes.outputs.changes_detected == 'true'
-        run: echo "Code formated."
-    
-      - name: "Run if no changes have been detected"
-        if: steps.commit_changes.outputs.changes_detected == 'false'
-        run: echo "No Changes."
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: format & update for python
+          committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          author: ${{ github.actor }} <${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com>
+          signoff: false
+          delete-branch: true
