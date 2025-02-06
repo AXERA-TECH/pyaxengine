@@ -17,20 +17,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
 
       - name: Run Black
         uses: datadog/action-py-black-formatter@v2
 
       - name: Commit changes
         id: commit_changes
-        uses: stefanzweifel/git-auto-commit-action@v5
-
-      - name: "Run if changes have been detected"
-        if: steps.commit_changes.outputs.changes_detected == 'true'
-        run: echo "Code formated."
-    
-      - name: "Run if no changes have been detected"
-        if: steps.commit_changes.outputs.changes_detected == 'false'
-        run: echo "No Changes."
+        uses: peter-evans/create-pull-request@v7
