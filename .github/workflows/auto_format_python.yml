@@ -11,35 +11,27 @@ on:
 jobs:
   format:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
+      - if: github.event_name == 'push' 
         uses: actions/checkout@v2
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
+      - if: github.event_name == 'pull_request' 
+        uses: actions/checkout@v2
         with:
-          python-version: "3.8"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install black
+          ref: ${{ github.head_ref }}
 
       - name: Run Black
-        run: |
-          black .
-
-      - name: Check for changes
-        id: check_changes
-        run: |
-          git diff --exit-code || echo "Changes detected"
+        uses: datadog/action-py-black-formatter@v2
 
       - name: Commit changes
-        if: steps.check_changes.outputs.exit_code != 0
-        run: |
-          git config --local user.name "github-actions"
-          git config --local user.email "github-actions@github.com"
-          git add .
-          git commit -m "Format Python code with Black" || echo "No changes to commit"
-          git push
+        id: commit_changes
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: format & update for python
+          committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          author: ${{ github.actor }} <${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com>
+          signoff: false
+          delete-branch: true
