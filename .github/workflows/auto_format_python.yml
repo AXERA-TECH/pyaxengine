@@ -33,7 +33,7 @@ jobs:
       - name: Check for changes
         id: check_changes
         run: |
-          git diff --exit-code || echo "Changes detected"
+          git diff --exit-code
 
       - name: Commit changes
         if: steps.check_changes.outputs.exit_code != 0
