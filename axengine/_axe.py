@@ -213,12 +213,14 @@ class AXEngineSession(Session):
         self._cmm_token = engine_cffi.new("AX_S8[]", b"PyEngine")
         self._io[0].nInputSize = len(self.get_inputs())
         self._io[0].nOutputSize = len(self.get_outputs())
-        self._io[0].pInputs = engine_cffi.new(
+        _inputs= engine_cffi.new(
             "AX_ENGINE_IO_BUFFER_T[{}]".format(self._io[0].nInputSize)
         )
-        self._io[0].pOutputs = engine_cffi.new(
+        self._io[0].pInputs = _inputs
+        _outputs = engine_cffi.new(
             "AX_ENGINE_IO_BUFFER_T[{}]".format(self._io[0].nOutputSize)
         )
+        self._io[0].pOutputs = _outputs
         for i in range(len(self.get_inputs())):
             max_buf = 0
             for j in range(self._shape_count):
