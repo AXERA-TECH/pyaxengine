@@ -216,11 +216,14 @@ class AXEngineSession(Session):
         _inputs= engine_cffi.new(
             "AX_ENGINE_IO_BUFFER_T[{}]".format(self._io[0].nInputSize)
         )
-        self._io[0].pInputs = _inputs
         _outputs = engine_cffi.new(
             "AX_ENGINE_IO_BUFFER_T[{}]".format(self._io[0].nOutputSize)
         )
+        self._io_buffers = (_inputs, _outputs)
+        self._io[0].pInputs = _inputs
         self._io[0].pOutputs = _outputs
+
+        self._io_inputs_pool = []
         for i in range(len(self.get_inputs())):
             max_buf = 0
             for j in range(self._shape_count):
@@ -228,6 +231,7 @@ class AXEngineSession(Session):
             self._io[0].pInputs[i].nSize = max_buf
             phy = engine_cffi.new("AX_U64*")
             vir = engine_cffi.new("AX_VOID**")
+            self._io_inputs_pool.append((phy, vir))
             ret = sys_lib.AX_SYS_MemAllocCached(
                 phy, vir, self._io[0].pInputs[i].nSize, self._align, self._cmm_token
             )
@@ -235,6 +239,8 @@ class AXEngineSession(Session):
                 raise RuntimeError("Failed to allocate memory for input.")
             self._io[0].pInputs[i].phyAddr = phy[0]
             self._io[0].pInputs[i].pVirAddr = vir[0]
+
+        self._io_outputs_pool = []
         for i in range(len(self.get_outputs())):
             max_buf = 0
             for j in range(self._shape_count):
@@ -242,6 +248,7 @@ class AXEngineSession(Session):
             self._io[0].pOutputs[i].nSize = max_buf
             phy = engine_cffi.new("AX_U64*")
             vir = engine_cffi.new("AX_VOID**")
+            self._io_outputs_pool.append((phy, vir))
             ret = sys_lib.AX_SYS_MemAllocCached(
                 phy, vir, self._io[0].pOutputs[i].nSize, self._align, self._cmm_token
             )
