@@ -19,6 +19,8 @@ Python 脚本快速构建 NPU 推理脚本
 - ml-dtypes >= 0.1.0
 - numpy >= 1.22.0
 
+*需要注意的是，如果您的开发环境是算力卡，那么更建议您优先考虑使用 [pyAXCL](https://github.com/AXERA-TECH/pyaxcl) 进行项目开发；pyAXCL 项目完整包含了算力卡形态的全部 API，更适合用于正式部署；PyAXEngine 项目更适合算法工程师进行快速原型验证，且用于计算卡环境时，PyAXEngine 不能调用编解码等模块(不是 PyAXEngine 的设计目标)。*
+
 ## 快速上手
 
 基于社区开发板 **爱芯派Pro(AX650N)** 进行展示
@@ -97,14 +99,17 @@ root@ax650:~/samples# python3 classification.py -m /opt/data/npu/models/mobilene
 
 ## 社区贡献者
 
-[zylo117](https://github.com/zylo117): 提供了基于 cffi 的 AXCL Runtime Python API 实现
+- [zylo117](https://github.com/zylo117): 提供了基于 cffi 的 AXCL Runtime Python API 实现
+- [nnn](https://github.com/nnn112358)，[HongJie Li](https://github.com/techshoww) 和 [Shinichi Tanaka](https://github.com/s1tnk) 报告 cffi 的使用问题，[Shinichi Tanaka](https://github.com/s1tnk) 提供了解决方案
+
 
 ## 关联项目
 
 - [ax-samples](https://github.com/AXERA-TECH/ax-samples)
 - [ax-llm](https://github.com/AXERA-TECH/ax-llm)
-- [pulsar2](https://pulsar2-docs.readthedocs.io/zh-cn/latest/)
-- [axcl](https://axcl-docs.readthedocs.io/zh-cn/latest/)
+- [Pulsar2](https://pulsar2-docs.readthedocs.io/zh-cn/latest/)
+- [AXCL](https://axcl-docs.readthedocs.io/zh-cn/latest/)
+- [pyAXCL](https://github.com/AXERA-TECH/pyaxcl)
 
 ## 技术讨论
 
