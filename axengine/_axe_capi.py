@@ -219,7 +219,7 @@ if arch == "64bit":
             AX_U32                      nOutputSize;
             AX_U32                      nBatchSize;
             AX_ENGINE_IO_SETTING_T*     pIoSetting;
-            AX_U64                      u64Reserved[10];
+            AX_U64                      u64Reserved[11];
         } AX_ENGINE_IO_T;
     """
     )
