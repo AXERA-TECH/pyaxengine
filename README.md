@@ -21,6 +21,10 @@ Python 脚本快速构建 NPU 推理脚本
 
 *需要注意的是，如果您的开发环境是算力卡，那么更建议您优先考虑使用 [pyAXCL](https://github.com/AXERA-TECH/pyaxcl) 进行项目开发；pyAXCL 项目完整包含了算力卡形态的全部 API，更适合用于正式部署；PyAXEngine 项目更适合算法工程师进行快速原型验证，且用于计算卡环境时，PyAXEngine 不能调用编解码等模块(不是 PyAXEngine 的设计目标)。*
 
+*AX650 SDK 2.18 以前的版本不支持 bf16，llm 模型会有运行时类型问题，请注意升级*
+
+*AX620E 平台暂未更新 bf16 支持，当前会返回 unknown 的 dtype，修复进行中*
+
 ## 快速上手
 
 基于社区开发板 **爱芯派Pro(AX650N)** 进行展示
@@ -32,6 +36,9 @@ Python 脚本快速构建 NPU 推理脚本
 
 ### 简单示例
 
+当前示例需要分别依赖 PIL 和 OpenCV，可以用 `pip install pillow opencv-python-headless` 安装。其中 `opencv-python-headless` 是 OpenCV 的 headless 版本，不依赖 GUI(非 headless 的版本需要依赖 OpenGL ES，运行环境中并没有)。
+
+```python
 将 [classification.py](https://github.com/AXERA-TECH/pyaxengine/blob/main/examples/classification.py) 拷贝到开发板上并执行。
 
 ```bash

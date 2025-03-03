@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name="axengine",
-    version="0.1.1",
+    version="0.1.2",
     classifiers=[
         "Development Status :: 1 - Alpha",
         "License :: OSI Approved :: BSD License",
