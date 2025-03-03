@@ -346,17 +346,21 @@ class AXEngineSession(Session):
             self,
             output_names: list[str],
             input_feed: dict[str, np.ndarray],
-            run_options=None
+            run_options=None,
+            shape_group: int = 0
     ):
         self._validate_input(input_feed)
         self._validate_output(output_names)
 
         if None is output_names:
-            output_names = [o.name for o in self.get_outputs()]
+            output_names = [o.name for o in self.get_outputs(shape_group)]
+
+        if (shape_group > self._shape_count - 1) or (shape_group < 0):
+            raise ValueError(f"Invalid shape group: {shape_group}")
 
         # fill model io
         for key, npy in input_feed.items():
-            for i, one in enumerate(self.get_inputs()):
+            for i, one in enumerate(self.get_inputs(shape_group)):
                 if one.name == key:
                     assert (
                             list(one.shape) == list(npy.shape) and one.dtype == npy.dtype
@@ -377,26 +381,32 @@ class AXEngineSession(Session):
                     break
 
         # execute model
-        ret = engine_lib.AX_ENGINE_RunSyncV2(
-            self._handle[0], self._context[0], self._io
-        )
+        if self._shape_count > 1:
+            ret = engine_lib.AX_ENGINE_RunGroupIOSync(
+                self._handle[0], self._context[0], shape_group, self._io
+            )
+        else:
+            ret = engine_lib.AX_ENGINE_RunSyncV2(
+                self._handle[0], self._context[0], self._io
+            )
 
         # flush output
         outputs = []
         if 0 == ret:
-            for i in range(len(self.get_outputs())):
+            for i in range(len(self.get_outputs(shape_group))):
                 sys_lib.AX_SYS_MinvalidateCache(
                     self._io[0].pOutputs[i].phyAddr,
                     self._io[0].pOutputs[i].pVirAddr,
                     self._io[0].pOutputs[i].nSize,
                 )
+                npy_size = self.get_outputs(shape_group)[i].dtype.itemsize * np.prod(self.get_outputs(shape_group)[i].shape)
                 npy = np.frombuffer(
                     engine_cffi.buffer(
-                        self._io[0].pOutputs[i].pVirAddr, self._io[0].pOutputs[i].nSize
+                        self._io[0].pOutputs[i].pVirAddr, npy_size
                     ),
-                    dtype=self.get_outputs()[i].dtype,
-                ).reshape(self.get_outputs()[i].shape)
-                name = self.get_outputs()[i].name
+                    dtype=self.get_outputs(shape_group)[i].dtype,
+                ).reshape(self.get_outputs(shape_group)[i].shape)
+                name = self.get_outputs(shape_group)[i].name
                 if name in output_names:
                     outputs.append(npy)
             return outputs

@@ -112,6 +112,7 @@ class InferenceSession:
             self,
             output_names: list[str] | None,
             input_feed: dict[str, np.ndarray],
-            run_options=None
+            run_options=None,
+            shape_group: int = 0
     ) -> list[np.ndarray]:
-        return self._sess.run(output_names, input_feed, run_options)
+        return self._sess.run(output_names, input_feed, run_options, shape_group)
