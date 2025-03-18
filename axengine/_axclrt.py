@@ -276,7 +276,8 @@ class AXCLRTSession(Session):
         for group in range(self._shape_count):
             one_group_io = []
             for index in range(axclrt_lib.axclrtEngineGetNumOutputs(self._info[0])):
-                name = axclrt_lib.axclrtEngineGetOutputNameByIndex(self._info[0], index)
+                cffi_name  = axclrt_lib.axclrtEngineGetOutputNameByIndex(self._info[0], index)
+                name = axclrt_cffi.string(cffi_name).decode("utf-8")
 
                 cffi_dtype = axclrt_cffi.new("axclrtEngineDataType *")
                 ret = axclrt_lib.axclrtEngineGetOutputDataType(self._info[0], index, cffi_dtype)
