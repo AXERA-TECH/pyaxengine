@@ -1,4 +1,4 @@
-name: Format Code
+name: Auto Format Config files & Docs
 
 on:
   push:
@@ -11,34 +11,31 @@ on:
 jobs:
   format:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
+        run: echo $(echo $GITHUB_REF | cut -d / -f 3)
+      - if: github.event_name == 'push'
         uses: actions/checkout@v2
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
+      - if: github.event_name == 'pull_request'
+        uses: actions/checkout@v2
         with:
-          node-version: "16"
+          ref: ${{ github.head_ref }}
 
-      - name: Install Prettier
-        run: |
-          npm install --save-dev prettier
-
-      - name: Format YAML and Markdown files
-        run: |
-          npx prettier --write "**/*.yml" "**/*.md"
-
-      - name: Check for changes
-        id: check_changes
-        run: |
-          git diff --exit-code || echo "Changes detected"
+      - name: Run Black
+        uses: actionsx/prettier@v2
+        with:
+          args: --write "**/*.yml" "**/*.md"
 
       - name: Commit changes
-        if: steps.check_changes.outputs.exit_code != 0
-        run: |
-          git config --local user.name "github-actions"
-          git config --local user.email "github-actions@github.com"
-          git add .
-          git commit -m "Format YAML and Markdown files with Prettier" || echo "No changes to commit"
-          git push
+        id: commit_changes
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: format & update for python
+          committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          author: ${{ github.actor }} <${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com>
+          signoff: false
+          delete-branch: true
