@@ -405,7 +405,7 @@ class AXEngineSession(Session):
                         self._io[0].pOutputs[i].pVirAddr, npy_size
                     ),
                     dtype=self.get_outputs(shape_group)[i].dtype,
-                ).reshape(self.get_outputs(shape_group)[i].shape)
+                ).reshape(self.get_outputs(shape_group)[i].shape).copy()
                 name = self.get_outputs(shape_group)[i].name
                 if name in output_names:
                     outputs.append(npy)
