@@ -40,6 +40,7 @@ Python 脚本快速构建 NPU 推理脚本
 
 ```python
 将 [classification.py](https://github.com/AXERA-TECH/pyaxengine/blob/main/examples/classification.py) 拷贝到开发板上并执行。
+```
 
 ```bash
 root@ax650:~/samples# python3 classification.py -m /opt/data/npu/models/mobilenetv2.axmodel -i /opt/data/npu/images/cat.jpg
