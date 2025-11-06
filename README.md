@@ -110,6 +110,7 @@ root@ax650:~/samples# python3 classification.py -m /opt/data/npu/models/mobilene
 - [zylo117](https://github.com/zylo117): 提供了基于 cffi 的 AXCL Runtime Python API 实现
 - [nnn](https://github.com/nnn112358)，[HongJie Li](https://github.com/techshoww) 和 [Shinichi Tanaka](https://github.com/s1tnk) 报告 cffi 的使用问题，[Shinichi Tanaka](https://github.com/s1tnk) 提供了解决方案
 - [yuyun](https://github.com/yuyun2000): 修复了加载模型时会在系统内存重复占用内存的bug
+- [Takeshi Watanabe](https://github.com/take-cheeze)：协助修复了文档问题
 
 ## 关联项目
 
