@@ -372,8 +372,10 @@ class AXCLRTSession(Session):
 
         # get output
         outputs = []
+        origin_output_names = [_o.name for _o in self.get_outputs(shape_group)]
+        outputs_ranks = [output_names.index(_on) for _on in origin_output_names]
         if 0 == ret:
-            for i in range(len(self.get_outputs(shape_group))):
+            for i in outputs_ranks:
                 ret = axclrt_lib.axclrtEngineGetOutputBufferByIndex(self._io[0], i, dev_prt, dev_size)
                 if 0 != ret:
                     raise RuntimeError(f"axclrtEngineGetOutputBufferByIndex failed for output {i}.")
