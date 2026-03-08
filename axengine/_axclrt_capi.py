@@ -6,6 +6,7 @@
 #
 
 import ctypes.util
+from pathlib import Path
 
 from cffi import FFI
 
@@ -190,8 +191,12 @@ axclrt_cffi.cdef(
 
 rt_name = "axcl_rt"
 rt_path = ctypes.util.find_library(rt_name)
+if rt_path is None:
+    fallback_paths = sorted(Path('/usr/lib/axcl').glob(f'lib{rt_name}.so*'))
+    if fallback_paths:
+        rt_path = str(fallback_paths[0])
 assert (
-        rt_path is not None
+    rt_path is not None
 ), f"Failed to find library {rt_name}. Please ensure it is installed and in the library path."
 
 axclrt_lib = axclrt_cffi.dlopen(rt_path)
