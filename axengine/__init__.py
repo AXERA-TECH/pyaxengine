@@ -16,7 +16,7 @@ _available_providers = get_available_providers()
 if not _available_providers:
     raise ImportError(
         f"No providers found. Please make sure you have installed one of the following: {get_all_providers()}")
-print("[INFO] Available providers: ", _available_providers)
+# print("[INFO] Available providers: ", _available_providers)
 
 from ._node import NodeArg
 from ._session import SessionOptions, InferenceSession
