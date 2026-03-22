@@ -1,0 +1,3 @@
+InferenceSession.__init__: (self, path_or_bytes, sess_options, providers, provider_options)
+NodeArg.__init__: (self, name, dtype, shape)
+SessionOptions: empty class (pass only)
