@@ -8,11 +8,11 @@
 import ctypes.util as cutil
 
 providers = []
-axengine_provider_name = 'AxEngineExecutionProvider'
-axclrt_provider_name = 'AXCLRTExecutionProvider'
+axengine_provider_name = "AxEngineExecutionProvider"
+axclrt_provider_name = "AXCLRTExecutionProvider"
 
-_axengine_lib_name = 'ax_engine'
-_axclrt_lib_name = 'axcl_rt'
+_axengine_lib_name = "ax_engine"
+_axclrt_lib_name = "axcl_rt"
 
 # check if axcl_rt is installed, so if available, it's the default provider
 if cutil.find_library(_axclrt_lib_name) is not None:
@@ -23,9 +23,9 @@ if cutil.find_library(_axengine_lib_name) is not None:
     providers.append(axengine_provider_name)
 
 
-def get_all_providers():
+def get_all_providers() -> list[str]:
     return [axengine_provider_name, axclrt_provider_name]
 
 
-def get_available_providers():
+def get_available_providers() -> list[str]:
     return providers

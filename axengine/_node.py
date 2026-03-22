@@ -7,7 +7,7 @@
 
 
 class NodeArg(object):
-    def __init__(self, name, dtype, shape):
-        self.name = name
-        self.dtype = dtype
-        self.shape = shape
+    def __init__(self, name: str, dtype: str, shape: tuple[int, ...]) -> None:
+        self.name: str = name
+        self.dtype: str = dtype
+        self.shape: tuple[int, ...] = shape

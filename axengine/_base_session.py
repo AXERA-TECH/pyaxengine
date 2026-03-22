@@ -6,6 +6,7 @@
 #
 
 from abc import ABC, abstractmethod
+from typing import Union
 
 import numpy as np
 
@@ -13,6 +14,8 @@ from ._node import NodeArg
 
 
 class SessionOptions:
+    """Session configuration options."""
+
     pass
 
 
@@ -29,7 +32,8 @@ class Session(ABC):
                 missing_input_names.append(i.name)
         if missing_input_names:
             raise ValueError(
-                f"Required inputs ({missing_input_names}) are missing from input feed ({feed_input_names}).")
+                f"Required inputs ({missing_input_names}) are missing from input feed ({feed_input_names})."
+            )
 
     def _validate_output(self, output_names: list[str]):
         if output_names is not None:
@@ -51,9 +55,6 @@ class Session(ABC):
 
     @abstractmethod
     def run(
-            self,
-            output_names: list[str] | None,
-            input_feed: dict[str, np.ndarray],
-            run_options=None
+        self, output_names: Union[list[str], None], input_feed: dict[str, np.ndarray], run_options=None
     ) -> list[np.ndarray]:
         pass
