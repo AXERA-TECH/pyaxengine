@@ -5,8 +5,6 @@
 # written consent of Axera Semiconductor Co., Ltd.
 #
 
-from typing import Tuple
-
 
 class NodeArg(object):
     """Represents a node argument with type and shape information.
@@ -17,7 +15,7 @@ class NodeArg(object):
         shape: The shape of the argument as a tuple of integers.
     """
 
-    def __init__(self, name: str, dtype: str, shape: Tuple[int, ...]) -> None:
+    def __init__(self, name: str, dtype: str, shape: tuple[int, ...]) -> None:
         self.name: str = name
         self.dtype: str = dtype
-        self.shape: Tuple[int, ...] = shape
+        self.shape: tuple[int, ...] = shape
