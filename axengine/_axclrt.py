@@ -8,7 +8,7 @@
 
 import atexit
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import numpy as np
 
@@ -25,7 +25,7 @@ __all__ = ["AXCLRTSession"]
 
 _is_axclrt_initialized = False
 _is_axclrt_engine_initialized = False
-_all_model_instances: List[Any] = []
+_all_model_instances: list[Any] = []
 
 
 def _initialize_axclrt():
@@ -67,18 +67,25 @@ def _get_version():
 
 
 class AXCLRTSession(Session):
+    """AXCL runtime-backed session for loading and executing AX models.
+
+    Attributes:
+        soc_name: The SOC name reported by the AXCL runtime.
+        _device_index: The selected device index used for this session.
+    """
+
     def __init__(
         self,
-        path_or_bytes: Union[str, bytes, os.PathLike],
-        sess_options: Optional[SessionOptions] = None,
-        provider_options: Optional[Dict[Any, Any]] = None,
+        path_or_bytes: str | bytes | os.PathLike,
+        sess_options: SessionOptions | None = None,
+        provider_options: dict[Any, Any] | None = None,
         **kwargs,
     ) -> None:
         super().__init__()
 
         self._device_index = 0
-        self._io: Optional[Any] = None
-        self._model_id: Optional[Any] = None
+        self._io: Any | None = None
+        self._model_id: Any | None = None
 
         if provider_options is not None and isinstance(provider_options, dict) and "device_id" in provider_options:
             self._device_index = provider_options.get("device_id", 0)
@@ -317,11 +324,11 @@ class AXCLRTSession(Session):
 
     def run(
         self,
-        output_names: Optional[List[str]],
-        input_feed: Dict[str, np.ndarray],
-        run_options: Optional[object] = None,
+        output_names: list[str] | None,
+        input_feed: dict[str, np.ndarray],
+        run_options: object | None = None,
         shape_group: int = 0,
-    ) -> List[np.ndarray]:
+    ) -> list[np.ndarray]:
         self._validate_input(input_feed)
         self._validate_output(output_names)
 
