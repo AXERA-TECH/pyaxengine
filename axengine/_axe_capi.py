@@ -7,11 +7,10 @@
 
 import ctypes.util
 import platform
-from typing import List
 
 from cffi import FFI
 
-__all__: List[str] = ["sys_lib", "sys_cffi", "engine_lib", "engine_cffi"]
+__all__: list[str] = ["sys_lib", "sys_cffi", "engine_lib", "engine_cffi"]
 
 sys_cffi = FFI()
 
