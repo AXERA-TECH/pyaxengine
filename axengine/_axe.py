@@ -7,7 +7,7 @@
 
 import atexit
 import os
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 
@@ -313,11 +313,11 @@ class AXEngineSession(Session):
 
     def run(
         self,
-        output_names: Optional[list[str]],
+        output_names: Optional[List[str]],
         input_feed: Dict[str, np.ndarray],
         run_options: Optional[object] = None,
         shape_group: int = 0,
-    ) -> list[np.ndarray]:
+    ) -> List[np.ndarray]:
         self._validate_input(input_feed)
         self._validate_output(output_names)
 
