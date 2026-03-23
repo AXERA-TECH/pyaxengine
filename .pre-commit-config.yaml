@@ -4,9 +4,10 @@ repos:
     hooks:
       - id: ruff
         args: [--fix]
-  
+      - id: ruff-format
+
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.8.0
     hooks:
       - id: mypy
-        additional_dependencies: [types-all]
+        args: [--python-version=3.8]

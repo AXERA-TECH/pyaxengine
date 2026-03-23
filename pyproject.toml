@@ -32,6 +32,7 @@ dev = [
     "pytest-cov>=4.0",
     "ruff>=0.1.0",
     "mypy>=1.0",
+    "griffe>=0.30.0",
 ]
 
 [tool.ruff]

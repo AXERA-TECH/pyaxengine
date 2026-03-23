@@ -1,3 +1,17 @@
-InferenceSession.__init__: (self, path_or_bytes, sess_options, providers, provider_options)
-NodeArg.__init__: (self, name, dtype, shape)
-SessionOptions: empty class (pass only)
+=== axengine/__init__.py (Public Exports) ===
+
+=== axengine/_session.py (InferenceSession) ===
+class InferenceSession:
+  get_session_options(self)
+  get_providers(self)
+  get_inputs(self, shape_group)
+  get_outputs(self, shape_group)
+  run(self, output_names, input_feed, run_options, shape_group)
+def get_session_options(self)
+def get_providers(self)
+def get_inputs(self, shape_group)
+def get_outputs(self, shape_group)
+def run(self, output_names, input_feed, run_options, shape_group)
+
+=== axengine/_node.py (NodeArg) ===
+class NodeArg:

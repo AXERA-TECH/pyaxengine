@@ -122,3 +122,56 @@ $ python -c "from axengine import NodeArg, SessionOptions; print('NodeArg:', Nod
 NodeArg: {'name': <class 'str'>, 'dtype': <class 'str'>, 'shape': tuple[int, ...], 'return': <class 'NoneType'>}
 SessionOptions: Session configuration options.
 ```
+
+
+## Task 16: Add docstrings to InferenceSession class and all public methods
+
+**Status**: ✅ COMPLETED
+
+**Changes Made**:
+
+### InferenceSession class docstring
+- Added comprehensive class docstring explaining purpose, attributes, and provider support
+- Documents that it's a high-level interface for ONNX model inference on Axera NPU
+
+### __init__() method docstring
+- Documents all parameters: path_or_bytes, sess_options, providers, provider_options, **kwargs
+- Documents all exceptions: ValueError, TypeError, RuntimeError
+- Explains provider selection logic and format options
+
+### Public method docstrings (Google style)
+- `__enter__()`: Context manager entry
+- `__exit__()`: Context manager exit
+- `get_session_options()`: Returns SessionOptions
+- `get_providers()`: Returns provider name
+- `get_inputs(shape_group)`: Returns list of input NodeArg with shape_group parameter
+- `get_outputs(shape_group)`: Returns list of output NodeArg with shape_group parameter
+- `run(output_names, input_feed, run_options, shape_group)`: Runs inference with all parameters documented
+
+**Files Modified**:
+- `axengine/_session.py`: Added docstrings to class and all 7 public methods
+
+**Format**: All docstrings follow Google style with Args, Returns, Raises sections
+
+
+## Task 17: Add docstrings to NodeArg and SessionOptions classes
+
+**Status**: ✅ COMPLETED
+
+**Changes Made**:
+
+### NodeArg class (_node.py)
+- Added comprehensive docstring explaining purpose and attributes
+- Documents all three attributes: name, dtype, shape
+- Includes example data types in docstring
+
+### SessionOptions class (_base_session.py)
+- Expanded docstring from single line to multi-line format
+- Explains purpose: configuration options for session initialization
+- Documents that it stores session-level configuration parameters
+
+**Files Modified**:
+- `axengine/_node.py`: Added docstring to NodeArg class
+- `axengine/_base_session.py`: Expanded docstring for SessionOptions class
+
+**Format**: Both docstrings follow Google style with Attributes section
