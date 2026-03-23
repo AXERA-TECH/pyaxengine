@@ -50,10 +50,10 @@ def _get_version():
 
 def _get_vnpu_type() -> VNPUType:
     vnpu_type = engine_cffi.new("AX_ENGINE_NPU_ATTR_T *")
-    ret = engine_lib.AX_ENGINE_GetVNPUAttr(vnpu_type)
+    ret = engine_lib.AX_ENGINE_GetVNPUAttr(vnpu_type)  # type: ignore[attr-defined]
     if 0 != ret:
         raise RuntimeError("Failed to get VNPU attribute.")
-    return VNPUType(vnpu_type.eHardMode)
+    return VNPUType(vnpu_type.eHardMode)  # type: ignore[attr-defined]
 
 
 def _initialize_engine():
@@ -208,7 +208,7 @@ class AXEngineSession(Session):
             phy = engine_cffi.new("AX_U64*")
             vir = engine_cffi.new("AX_VOID**")
             self._io_inputs_pool.append((phy, vir))
-            ret = sys_lib.AX_SYS_MemAllocCached(phy, vir, self._io[0].pInputs[i].nSize, self._align, self._cmm_token)
+            ret = sys_lib.AX_SYS_MemAllocCached(phy, vir, self._io[0].pInputs[i].nSize, self._align, self._cmm_token)  # type: ignore[attr-defined]
             if 0 != ret:
                 raise RuntimeError("Failed to allocate memory for input.")
             self._io[0].pInputs[i].phyAddr = phy[0]
@@ -223,7 +223,7 @@ class AXEngineSession(Session):
             phy = engine_cffi.new("AX_U64*")
             vir = engine_cffi.new("AX_VOID**")
             self._io_outputs_pool.append((phy, vir))
-            ret = sys_lib.AX_SYS_MemAllocCached(phy, vir, self._io[0].pOutputs[i].nSize, self._align, self._cmm_token)
+            ret = sys_lib.AX_SYS_MemAllocCached(phy, vir, self._io[0].pOutputs[i].nSize, self._align, self._cmm_token)  # type: ignore[attr-defined]
             if 0 != ret:
                 raise RuntimeError("Failed to allocate memory for output.")
             self._io[0].pOutputs[i].phyAddr = phy[0]
@@ -241,7 +241,7 @@ class AXEngineSession(Session):
 
     def _get_model_type(self) -> ModelType:
         model_type = engine_cffi.new("AX_ENGINE_MODEL_TYPE_T *")
-        ret = engine_lib.AX_ENGINE_GetModelType(self._model_buffer, self._model_buffer_size, model_type)
+        ret = engine_lib.AX_ENGINE_GetModelType(self._model_buffer, self._model_buffer_size, model_type)  # type: ignore[attr-defined]
         if 0 != ret:
             raise RuntimeError("Failed to get model type.")
         return ModelType(model_type[0])
@@ -297,7 +297,7 @@ class AXEngineSession(Session):
             one_group_io = []
             for index in range(getattr(self._info[group][0], f"n{io_type}Size")):
                 current_io = getattr(self._info[group][0], f"p{io_type}s")[index]
-                name = engine_cffi.string(current_io.pName).decode("utf-8")
+                name = engine_cffi.string(current_io.pName).decode("utf-8")  # type: ignore[union-attr]
                 shape = tuple(current_io.pShape[i] for i in range(current_io.nShapeSize))
                 dtype = _transform_dtype(current_io.eDataType)
                 meta = NodeArg(name, dtype, shape)
@@ -340,7 +340,7 @@ class AXEngineSession(Session):
                     npy_ptr = engine_cffi.cast("void *", npy.ctypes.data)
 
                     engine_cffi.memmove(self._io[0].pInputs[i].pVirAddr, npy_ptr, npy.nbytes)
-                    sys_lib.AX_SYS_MflushCache(
+                    sys_lib.AX_SYS_MflushCache(  # type: ignore[attr-defined]
                         self._io[0].pInputs[i].phyAddr,
                         self._io[0].pInputs[i].pVirAddr,
                         self._io[0].pInputs[i].nSize,
@@ -349,9 +349,9 @@ class AXEngineSession(Session):
 
         # execute model
         if self._shape_count > 1:
-            ret = engine_lib.AX_ENGINE_RunGroupIOSync(self._handle[0], self._context[0], shape_group, self._io)
+            ret = engine_lib.AX_ENGINE_RunGroupIOSync(self._handle[0], self._context[0], shape_group, self._io)  # type: ignore[attr-defined]
         else:
-            ret = engine_lib.AX_ENGINE_RunSyncV2(self._handle[0], self._context[0], self._io)
+            ret = engine_lib.AX_ENGINE_RunSyncV2(self._handle[0], self._context[0], self._io)  # type: ignore[attr-defined]
 
         # flush output
         outputs = []
@@ -359,7 +359,7 @@ class AXEngineSession(Session):
         outputs_ranks = [output_names.index(_on) for _on in origin_output_names]
         if 0 == ret:
             for i in outputs_ranks:
-                sys_lib.AX_SYS_MinvalidateCache(
+                sys_lib.AX_SYS_MinvalidateCache(  # type: ignore[attr-defined]
                     self._io[0].pOutputs[i].phyAddr,
                     self._io[0].pOutputs[i].pVirAddr,
                     self._io[0].pOutputs[i].nSize,

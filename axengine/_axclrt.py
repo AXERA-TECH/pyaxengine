@@ -54,7 +54,7 @@ atexit.register(_finalize_axclrt)
 
 def _get_vnpu_type() -> VNPUType:
     vnpu_type = axclrt_cffi.new("axclrtEngineVNpuKind *")
-    ret = axclrt_lib.axclrtEngineGetVNpuKind(vnpu_type)
+    ret = axclrt_lib.axclrtEngineGetVNpuKind(vnpu_type)  # type: ignore[attr-defined]
     if ret != 0:
         raise RuntimeError("Failed to get VNPU attribute.")
     return VNPUType(vnpu_type[0])
@@ -84,29 +84,29 @@ class AXCLRTSession(Session):
             self._device_index = provider_options.get("device_id", 0)
 
         lst = axclrt_cffi.new("axclrtDeviceList *")
-        ret = axclrt_lib.axclrtGetDeviceList(lst)
-        if ret != 0 or lst.num == 0:
-            raise RuntimeError(f"Get AXCL device failed 0x{ret:08x}, find total {lst.num} device.")
+        ret = axclrt_lib.axclrtGetDeviceList(lst)  # type: ignore[attr-defined]
+        if ret != 0 or lst.num == 0:  # type: ignore[attr-defined]
+            raise RuntimeError(f"Get AXCL device failed 0x{ret:08x}, find total {lst.num} device.")  # type: ignore[attr-defined]
 
-        if self._device_index >= lst.num:
-            raise RuntimeError(f"Device index {self._device_index} is out of range, total {lst.num} device.")
+        if self._device_index >= lst.num:  # type: ignore[attr-defined]
+            raise RuntimeError(f"Device index {self._device_index} is out of range, total {lst.num} device.")  # type: ignore[attr-defined]
 
-        self._device_id = lst.devices[self._device_index]
-        ret = axclrt_lib.axclrtSetDevice(self._device_id)
-        if ret != 0 or lst.num == 0:
+        self._device_id = lst.devices[self._device_index]  # type: ignore[attr-defined]
+        ret = axclrt_lib.axclrtSetDevice(self._device_id)  # type: ignore[attr-defined]
+        if ret != 0 or lst.num == 0:  # type: ignore[attr-defined]
             raise RuntimeError(f"Set AXCL device failed 0x{ret:08x}.")
 
         global _is_axclrt_engine_initialized
         vnpu_type = axclrt_cffi.cast("axclrtEngineVNpuKind", VNPUType.DISABLED.value)
         # try to initialize NPU as disabled
-        ret = axclrt_lib.axclrtEngineInit(vnpu_type)
+        ret = axclrt_lib.axclrtEngineInit(vnpu_type)  # type: ignore[attr-defined]
         # if failed, try to get vnpu type
         if 0 != ret:
             vnpu = axclrt_cffi.new("axclrtEngineVNpuKind *")
-            ret = axclrt_lib.axclrtEngineGetVNpuKind(vnpu)
+            ret = axclrt_lib.axclrtEngineGetVNpuKind(vnpu)  # type: ignore[attr-defined]
             # if failed, that means the NPU is not available
             if ret != 0:
-                raise RuntimeError(f"axclrtEngineInit as {vnpu.value} failed 0x{ret:08x}.")
+                raise RuntimeError(f"axclrtEngineInit as {vnpu.value} failed 0x{ret:08x}.")  # type: ignore[attr-defined]
             # if success, that means the NPU is already initialized as vnpu.value
             #   so the initialization is failed.
             # this means the other users maybe uninitialized the NPU suddenly
@@ -115,16 +115,16 @@ class AXCLRTSession(Session):
             #   it because the api looks like onnxruntime, so there no window avoid this.
             # such as the life.
             else:
-                logger.warning(f"Failed to initialize NPU as {vnpu_type}, NPU is already initialized as {vnpu.value}.")
+                logger.warning(f"Failed to initialize NPU as {vnpu_type}, NPU is already initialized as {vnpu.value}.")  # type: ignore[attr-defined]
         # initialize NPU successfully, mark the flag to ensure the engine will be finalized
         else:
             _is_axclrt_engine_initialized = True
 
-        self.soc_name = axclrt_cffi.string(axclrt_lib.axclrtGetSocName()).decode()
+        self.soc_name = axclrt_cffi.string(axclrt_lib.axclrtGetSocName()).decode()  # type: ignore[union-attr,attr-defined]
         logger.info(f"SOC Name: {self.soc_name}")
 
         self._thread_context = axclrt_cffi.new("axclrtContext *")
-        ret = axclrt_lib.axclrtGetCurrentContext(self._thread_context)
+        ret = axclrt_lib.axclrtGetCurrentContext(self._thread_context)  # type: ignore[attr-defined]
         if ret != 0:
             raise RuntimeError("axclrtGetCurrentContext failed")
 
@@ -328,7 +328,7 @@ class AXCLRTSession(Session):
         if self._io is None:
             raise RuntimeError("IO not initialized")
 
-        ret = axclrt_lib.axclrtSetCurrentContext(self._thread_context[0])
+        ret = axclrt_lib.axclrtSetCurrentContext(self._thread_context[0])  # type: ignore[attr-defined]
         if ret != 0:
             raise RuntimeError("axclrtSetCurrentContext failed")
 
@@ -351,11 +351,14 @@ class AXCLRTSession(Session):
                     if not (npy.flags.c_contiguous or npy.flags.f_contiguous):
                         npy = np.ascontiguousarray(npy)
                     npy_ptr = axclrt_cffi.cast("void *", npy.ctypes.data)
-                    ret = axclrt_lib.axclrtEngineGetInputBufferByIndex(self._io[0], i, dev_prt, dev_size)
+                    ret = axclrt_lib.axclrtEngineGetInputBufferByIndex(self._io[0], i, dev_prt, dev_size)  # type: ignore[attr-defined]
                     if 0 != ret:
                         raise RuntimeError(f"axclrtEngineGetInputBufferByIndex failed for input {i}.")
-                    ret = axclrt_lib.axclrtMemcpy(
-                        dev_prt[0], npy_ptr, npy.nbytes, axclrt_lib.AXCL_MEMCPY_HOST_TO_DEVICE
+                    ret = axclrt_lib.axclrtMemcpy(  # type: ignore[attr-defined]
+                        dev_prt[0],
+                        npy_ptr,
+                        npy.nbytes,
+                        axclrt_lib.AXCL_MEMCPY_HOST_TO_DEVICE,  # type: ignore[attr-defined]
                     )
                     if 0 != ret:
                         raise RuntimeError(f"axclrtMemcpy failed for input {i}.")
@@ -363,7 +366,7 @@ class AXCLRTSession(Session):
         if self._model_id is None or self._context_id is None:
             raise RuntimeError("Model or context not initialized")
 
-        ret = axclrt_lib.axclrtEngineExecute(self._model_id[0], self._context_id[0], shape_group, self._io[0])
+        ret = axclrt_lib.axclrtEngineExecute(self._model_id[0], self._context_id[0], shape_group, self._io[0])  # type: ignore[attr-defined]
 
         # get output
         outputs = []
@@ -371,7 +374,7 @@ class AXCLRTSession(Session):
         outputs_ranks = [output_names.index(_on) for _on in origin_output_names]
         if 0 == ret:
             for i in outputs_ranks:
-                ret = axclrt_lib.axclrtEngineGetOutputBufferByIndex(self._io[0], i, dev_prt, dev_size)
+                ret = axclrt_lib.axclrtEngineGetOutputBufferByIndex(self._io[0], i, dev_prt, dev_size)  # type: ignore[attr-defined]
                 if 0 != ret:
                     raise RuntimeError(f"axclrtEngineGetOutputBufferByIndex failed for output {i}.")
                 buffer_addr = dev_prt[0]
@@ -380,7 +383,7 @@ class AXCLRTSession(Session):
                 )
                 npy = np.zeros(self.get_outputs(shape_group)[i].shape, dtype=self.get_outputs(shape_group)[i].dtype)
                 npy_ptr = axclrt_cffi.cast("void *", npy.ctypes.data)
-                ret = axclrt_lib.axclrtMemcpy(npy_ptr, buffer_addr, npy_size, axclrt_lib.AXCL_MEMCPY_DEVICE_TO_HOST)
+                ret = axclrt_lib.axclrtMemcpy(npy_ptr, buffer_addr, npy_size, axclrt_lib.AXCL_MEMCPY_DEVICE_TO_HOST)  # type: ignore[attr-defined]
                 if 0 != ret:
                     raise RuntimeError(f"axclrtMemcpy failed for output {i}.")
                 name = self.get_outputs(shape_group)[i].name
