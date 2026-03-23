@@ -6,7 +6,6 @@
 #
 
 import ctypes.util as cutil
-from typing import List
 
 providers = []
 axengine_provider_name = "AxEngineExecutionProvider"
@@ -24,9 +23,9 @@ if cutil.find_library(_axengine_lib_name) is not None:
     providers.append(axengine_provider_name)
 
 
-def get_all_providers() -> List[str]:
+def get_all_providers() -> list[str]:
     return [axengine_provider_name, axclrt_provider_name]
 
 
-def get_available_providers() -> List[str]:
+def get_available_providers() -> list[str]:
     return providers
