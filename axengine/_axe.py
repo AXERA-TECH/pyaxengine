@@ -7,7 +7,7 @@
 
 import atexit
 import os
-from typing import Any
+from typing import Any, Union, Dict, Optional
 
 import numpy as np
 
@@ -20,7 +20,7 @@ from ._utils import _transform_dtype
 
 logger = get_logger(__name__)
 
-__all__: ["AXEngineSession"]
+__all__ = ["AXEngineSession"]
 
 _is_sys_initialized = False
 _is_engine_initialized = False
@@ -96,9 +96,9 @@ atexit.register(_finalize_engine)
 class AXEngineSession(Session):
     def __init__(
         self,
-        path_or_bytes: str | bytes | os.PathLike,
-        sess_options: SessionOptions | None = None,
-        provider_options: dict[Any, Any] | None = None,
+        path_or_bytes: Union[str, bytes, os.PathLike],
+        sess_options: Optional[SessionOptions] = None,
+        provider_options: Optional[Dict[Any, Any]] = None,
         **kwargs,
     ) -> None:
         super().__init__()
@@ -298,7 +298,7 @@ class AXEngineSession(Session):
             for index in range(getattr(self._info[group][0], f"n{io_type}Size")):
                 current_io = getattr(self._info[group][0], f"p{io_type}s")[index]
                 name = engine_cffi.string(current_io.pName).decode("utf-8")
-                shape = [current_io.pShape[i] for i in range(current_io.nShapeSize)]
+                shape = tuple(current_io.pShape[i] for i in range(current_io.nShapeSize))
                 dtype = _transform_dtype(current_io.eDataType)
                 meta = NodeArg(name, dtype, shape)
                 one_group_io.append(meta)
@@ -311,7 +311,13 @@ class AXEngineSession(Session):
     def _get_outputs(self):
         return self._get_io("Output")
 
-    def run(self, output_names: list[str], input_feed: dict[str, np.ndarray], run_options=None, shape_group: int = 0):
+    def run(
+        self,
+        output_names: Optional[list[str]],
+        input_feed: Dict[str, np.ndarray],
+        run_options: Optional[object] = None,
+        shape_group: int = 0,
+    ) -> list[np.ndarray]:
         self._validate_input(input_feed)
         self._validate_output(output_names)
 
@@ -358,7 +364,7 @@ class AXEngineSession(Session):
                     self._io[0].pOutputs[i].pVirAddr,
                     self._io[0].pOutputs[i].nSize,
                 )
-                npy_size = self.get_outputs(shape_group)[i].dtype.itemsize * np.prod(
+                npy_size = np.dtype(self.get_outputs(shape_group)[i].dtype).itemsize * np.prod(
                     self.get_outputs(shape_group)[i].shape
                 )
                 npy = (

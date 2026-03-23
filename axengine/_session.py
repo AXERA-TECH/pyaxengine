@@ -6,7 +6,7 @@
 #
 
 import os
-from typing import Any, Sequence
+from typing import Any, Sequence, Union, Dict, Optional, List, Tuple
 
 import numpy as np
 
@@ -33,10 +33,10 @@ class InferenceSession:
 
     def __init__(
         self,
-        path_or_bytes: str | bytes | os.PathLike,
-        sess_options: SessionOptions | None = None,
-        providers: Sequence[str | tuple[str, dict[Any, Any]]] | None = None,
-        provider_options: Sequence[dict[Any, Any]] | None = None,
+        path_or_bytes: Union[str, bytes, os.PathLike],
+        sess_options: Optional[SessionOptions] = None,
+        providers: Optional[Sequence[Union[str, Tuple[str, Dict[Any, Any]]]]] = None,
+        provider_options: Optional[Sequence[Dict[Any, Any]]] = None,
         **kwargs,
     ) -> None:
         """Initialize an InferenceSession.
@@ -54,10 +54,10 @@ class InferenceSession:
             TypeError: If provider format is invalid.
             RuntimeError: If session creation fails.
         """
-        self._sess = None
+        self._sess: Optional[Union[Any, Any]] = None
         self._sess_options = sess_options
-        self._provider = None
-        self._provider_options = None
+        self._provider: Optional[str] = None
+        self._provider_options: Optional[Dict[Any, Any]] = None
         self._available_providers = get_available_providers()
 
         # the providers should be available at least one, checked in __init__.py
@@ -104,14 +104,20 @@ class InferenceSession:
 
         logger.info(f"Using provider: {self._provider}")
 
+        provider_opts = None
+        if self._provider_options is not None:
+            provider_opts = self._provider_options
+        elif provider_options is not None and len(provider_options) > 0:
+            provider_opts = provider_options[0]
+
         if self._provider == axclrt_provider_name:
             from ._axclrt import AXCLRTSession
 
-            self._sess = AXCLRTSession(path_or_bytes, sess_options, provider_options, **kwargs)
+            self._sess = AXCLRTSession(path_or_bytes, sess_options, provider_opts, **kwargs)
         if self._provider == axengine_provider_name:
             from ._axe import AXEngineSession
 
-            self._sess = AXEngineSession(path_or_bytes, sess_options, provider_options, **kwargs)
+            self._sess = AXEngineSession(path_or_bytes, sess_options, provider_opts, **kwargs)
         if self._sess is None:
             raise RuntimeError(f"Create session failed with provider: {self._provider}")
 
@@ -143,40 +149,32 @@ class InferenceSession:
         """
         return self._provider
 
-    def get_inputs(self, shape_group: int = 0) -> list[NodeArg]:
-        """Get model input node information.
+    def get_inputs(self, shape_group: int = 0) -> List[NodeArg]:
+        if self._sess is None:
+            raise RuntimeError("Session not initialized")
+        result = self._sess.get_inputs(shape_group)
+        if not isinstance(result, list):
+            raise RuntimeError("Invalid session response")
+        return result
 
-        Args:
-            shape_group: Shape group index. Defaults to 0.
-
-        Returns:
-            list[NodeArg]: List of input node arguments.
-        """
-        return self._sess.get_inputs(shape_group)
-
-    def get_outputs(self, shape_group: int = 0) -> list[NodeArg]:
-        """Get model output node information.
-
-        Args:
-            shape_group: Shape group index. Defaults to 0.
-
-        Returns:
-            list[NodeArg]: List of output node arguments.
-        """
-        return self._sess.get_outputs(shape_group)
+    def get_outputs(self, shape_group: int = 0) -> List[NodeArg]:
+        if self._sess is None:
+            raise RuntimeError("Session not initialized")
+        result = self._sess.get_outputs(shape_group)
+        if not isinstance(result, list):
+            raise RuntimeError("Invalid session response")
+        return result
 
     def run(
-        self, output_names: list[str] | None, input_feed: dict[str, np.ndarray], run_options=None, shape_group: int = 0
-    ) -> list[np.ndarray]:
-        """Run inference on input data.
-
-        Args:
-            output_names: Names of outputs to return. If None, returns all outputs.
-            input_feed: Dictionary mapping input names to numpy arrays.
-            run_options: Runtime options for execution. Defaults to None.
-            shape_group: Shape group index. Defaults to 0.
-
-        Returns:
-            list[np.ndarray]: List of output arrays in the order specified by output_names.
-        """
-        return self._sess.run(output_names, input_feed, run_options, shape_group)
+        self,
+        output_names: Optional[List[str]],
+        input_feed: Dict[str, np.ndarray],
+        run_options: Optional[object] = None,
+        shape_group: int = 0,
+    ) -> List[np.ndarray]:
+        if self._sess is None:
+            raise RuntimeError("Session not initialized")
+        result = self._sess.run(output_names, input_feed, run_options, shape_group)
+        if not isinstance(result, list):
+            raise RuntimeError("Invalid session response")
+        return result

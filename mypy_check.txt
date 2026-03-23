@@ -1,0 +1,19 @@
+pyproject.toml: [mypy]: python_version: Python 3.8 is not supported (must be 3.9 or higher)
+axengine/_axe_capi.py:11: error: Library stubs not installed for "cffi"  [import-untyped]
+axengine/_axclrt_capi.py:10: error: Library stubs not installed for "cffi"  [import-untyped]
+axengine/_axclrt_capi.py:10: note: Hint: "python3 -m pip install types-cffi"
+axengine/_axclrt_capi.py:10: note: (or run "mypy --install-types" to install all missing stub packages)
+axengine/_axclrt_capi.py:10: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
+axengine/_axe.py:303: error: Argument 3 to "NodeArg" has incompatible type "list[Any]"; expected "tuple[int, ...]"  [arg-type]
+axengine/_axe.py:367: error: "str" has no attribute "itemsize"  [attr-defined]
+axengine/_axclrt.py:351: error: Value of type "Optional[Any]" is not indexable  [index]
+axengine/_axclrt.py:361: error: Value of type "Optional[Any]" is not indexable  [index]
+axengine/_axclrt.py:369: error: Value of type "Optional[Any]" is not indexable  [index]
+axengine/_axclrt.py:373: error: "str" has no attribute "itemsize"  [attr-defined]
+axengine/_session.py:110: error: Argument 3 to "AXCLRTSession" has incompatible type "Optional[Sequence[dict[Any, Any]]]"; expected "Optional[dict[Any, Any]]"  [arg-type]
+axengine/_session.py:114: error: Incompatible types in assignment (expression has type "AXEngineSession", variable has type "Optional[AXCLRTSession]")  [assignment]
+axengine/_session.py:114: error: Argument 3 to "AXEngineSession" has incompatible type "Optional[Sequence[dict[Any, Any]]]"; expected "Optional[dict[Any, Any]]"  [arg-type]
+axengine/_session.py:155: error: Item "None" of "Optional[AXCLRTSession]" has no attribute "get_inputs"  [union-attr]
+axengine/_session.py:166: error: Item "None" of "Optional[AXCLRTSession]" has no attribute "get_outputs"  [union-attr]
+axengine/_session.py:186: error: Item "None" of "Optional[AXCLRTSession]" has no attribute "run"  [union-attr]
+Found 14 errors in 5 files (checked 13 source files)

@@ -8,8 +8,9 @@
 import ctypes.util
 
 from cffi import FFI
+from typing import List
 
-__all__: ["axclrt_cffi", "axclrt_lib"]
+__all__: List[str] = ["axclrt_cffi", "axclrt_lib"]
 
 axclrt_cffi = FFI()
 

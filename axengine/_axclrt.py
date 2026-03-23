@@ -8,7 +8,7 @@
 
 import atexit
 import os
-from typing import Any
+from typing import Any, Union, Dict, Optional, List
 
 import numpy as np
 
@@ -21,11 +21,11 @@ from ._utils import _transform_dtype_axclrt as _transform_dtype
 
 logger = get_logger(__name__)
 
-__all__: ["AXCLRTSession"]
+__all__ = ["AXCLRTSession"]
 
 _is_axclrt_initialized = False
 _is_axclrt_engine_initialized = False
-_all_model_instances = []
+_all_model_instances: List[Any] = []
 
 
 def _initialize_axclrt():
@@ -69,19 +69,19 @@ def _get_version():
 class AXCLRTSession(Session):
     def __init__(
         self,
-        path_or_bytes: str | bytes | os.PathLike,
-        sess_options: SessionOptions | None = None,
-        provider_options: dict[Any, Any] | None = None,
+        path_or_bytes: Union[str, bytes, os.PathLike],
+        sess_options: Optional[SessionOptions] = None,
+        provider_options: Optional[Dict[Any, Any]] = None,
         **kwargs,
     ) -> None:
         super().__init__()
 
         self._device_index = 0
-        self._io = None
-        self._model_id = None
+        self._io: Optional[Any] = None
+        self._model_id: Optional[Any] = None
 
-        if provider_options is not None and "device_id" in provider_options[0]:
-            self._device_index = provider_options[0].get("device_id", 0)
+        if provider_options is not None and isinstance(provider_options, dict) and "device_id" in provider_options:
+            self._device_index = provider_options.get("device_id", 0)
 
         lst = axclrt_cffi.new("axclrtDeviceList *")
         ret = axclrt_lib.axclrtGetDeviceList(lst)
@@ -315,9 +315,18 @@ class AXCLRTSession(Session):
                 raise RuntimeError(f"axclrtEngineSetOutputBufferByIndex failed 0x{ret:08x} for output {i}.")
         return _io
 
-    def run(self, output_names: list[str], input_feed: dict[str, np.ndarray], run_options=None, shape_group: int = 0):
+    def run(
+        self,
+        output_names: Optional[List[str]],
+        input_feed: Dict[str, np.ndarray],
+        run_options: Optional[object] = None,
+        shape_group: int = 0,
+    ) -> List[np.ndarray]:
         self._validate_input(input_feed)
         self._validate_output(output_names)
+
+        if self._io is None:
+            raise RuntimeError("IO not initialized")
 
         ret = axclrt_lib.axclrtSetCurrentContext(self._thread_context[0])
         if ret != 0:
@@ -351,7 +360,9 @@ class AXCLRTSession(Session):
                     if 0 != ret:
                         raise RuntimeError(f"axclrtMemcpy failed for input {i}.")
 
-        # execute model
+        if self._model_id is None or self._context_id is None:
+            raise RuntimeError("Model or context not initialized")
+
         ret = axclrt_lib.axclrtEngineExecute(self._model_id[0], self._context_id[0], shape_group, self._io[0])
 
         # get output
@@ -364,7 +375,7 @@ class AXCLRTSession(Session):
                 if 0 != ret:
                     raise RuntimeError(f"axclrtEngineGetOutputBufferByIndex failed for output {i}.")
                 buffer_addr = dev_prt[0]
-                npy_size = self.get_outputs(shape_group)[i].dtype.itemsize * np.prod(
+                npy_size = np.dtype(self.get_outputs(shape_group)[i].dtype).itemsize * np.prod(
                     self.get_outputs(shape_group)[i].shape
                 )
                 npy = np.zeros(self.get_outputs(shape_group)[i].shape, dtype=self.get_outputs(shape_group)[i].dtype)

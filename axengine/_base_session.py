@@ -6,7 +6,7 @@
 #
 
 from abc import ABC, abstractmethod
-from typing import Union
+from typing import Union, List, Dict, Optional
 
 import numpy as np
 
@@ -26,10 +26,10 @@ class SessionOptions:
 class Session(ABC):
     def __init__(self) -> None:
         self._shape_count = 0
-        self._inputs = []
-        self._outputs = []
+        self._inputs: List[List[NodeArg]] = []
+        self._outputs: List[List[NodeArg]] = []
 
-    def _validate_input(self, feed_input_names: dict[str, np.ndarray]):
+    def _validate_input(self, feed_input_names: Dict[str, np.ndarray]) -> None:
         missing_input_names = []
         for i in self.get_inputs():
             if i.name not in feed_input_names:
@@ -39,19 +39,19 @@ class Session(ABC):
                 f"Required inputs ({missing_input_names}) are missing from input feed ({feed_input_names})."
             )
 
-    def _validate_output(self, output_names: list[str]):
+    def _validate_output(self, output_names: Optional[List[str]]) -> None:
         if output_names is not None:
             for name in output_names:
                 if name not in [o.name for o in self.get_outputs()]:
                     raise ValueError(f"Output name '{name}' is not in model outputs name list.")
 
-    def get_inputs(self, shape_group: int = 0) -> list[NodeArg]:
+    def get_inputs(self, shape_group: int = 0) -> List[NodeArg]:
         if shape_group > self._shape_count:
             raise ValueError(f"Shape group '{shape_group}' is out of range, total {self._shape_count}.")
         selected_info = self._inputs[shape_group]
         return selected_info
 
-    def get_outputs(self, shape_group: int = 0) -> list[NodeArg]:
+    def get_outputs(self, shape_group: int = 0) -> List[NodeArg]:
         if shape_group > self._shape_count:
             raise ValueError(f"Shape group '{shape_group}' is out of range, total {self._shape_count}.")
         selected_info = self._outputs[shape_group]
@@ -59,6 +59,6 @@ class Session(ABC):
 
     @abstractmethod
     def run(
-        self, output_names: Union[list[str], None], input_feed: dict[str, np.ndarray], run_options=None
-    ) -> list[np.ndarray]:
+        self, output_names: Optional[List[str]], input_feed: Dict[str, np.ndarray], run_options: Optional[object] = None
+    ) -> List[np.ndarray]:
         pass
