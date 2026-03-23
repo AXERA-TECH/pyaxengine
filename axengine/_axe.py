@@ -9,39 +9,21 @@ import atexit
 import os
 from typing import Any, Sequence
 
-import ml_dtypes as mldt
 import numpy as np
 
 from ._axe_capi import sys_lib, engine_cffi, engine_lib
 from ._axe_types import VNPUType, ModelType, ChipType
 from ._base_session import Session, SessionOptions
 from ._node import NodeArg
+from ._utils import _transform_dtype
+from ._logging import get_logger
+
+logger = get_logger(__name__)
 
 __all__: ["AXEngineSession"]
 
 _is_sys_initialized = False
 _is_engine_initialized = False
-
-
-def _transform_dtype(dtype):
-    if dtype == engine_cffi.cast("AX_ENGINE_DATA_TYPE_T", engine_lib.AX_ENGINE_DT_UINT8):
-        return np.dtype(np.uint8)
-    elif dtype == engine_cffi.cast("AX_ENGINE_DATA_TYPE_T", engine_lib.AX_ENGINE_DT_SINT8):
-        return np.dtype(np.int8)
-    elif dtype == engine_cffi.cast("AX_ENGINE_DATA_TYPE_T", engine_lib.AX_ENGINE_DT_UINT16):
-        return np.dtype(np.uint16)
-    elif dtype == engine_cffi.cast("AX_ENGINE_DATA_TYPE_T", engine_lib.AX_ENGINE_DT_SINT16):
-        return np.dtype(np.int16)
-    elif dtype == engine_cffi.cast("AX_ENGINE_DATA_TYPE_T", engine_lib.AX_ENGINE_DT_UINT32):
-        return np.dtype(np.uint32)
-    elif dtype == engine_cffi.cast("AX_ENGINE_DATA_TYPE_T", engine_lib.AX_ENGINE_DT_SINT32):
-        return np.dtype(np.int32)
-    elif dtype == engine_cffi.cast("AX_ENGINE_DATA_TYPE_T", engine_lib.AX_ENGINE_DT_FLOAT32):
-        return np.dtype(np.float32)
-    elif dtype == engine_cffi.cast("AX_ENGINE_DATA_TYPE_T", engine_lib.AX_ENGINE_DT_BFLOAT16):
-        return np.dtype(mldt.bfloat16)
-    else:
-        raise ValueError(f"Unsupported data type '{dtype}'.")
 
 
 def _check_cffi_func_exists(lib, func_name):
@@ -87,17 +69,15 @@ def _initialize_engine():
     ret = engine_lib.AX_ENGINE_GetVNPUAttr(vnpu_type)
     if 0 != ret:
         # this means the NPU was not initialized
-        vnpu_type.eHardMode = engine_cffi.cast(
-            "AX_ENGINE_NPU_MODE_T", VNPUType.DISABLED.value
-        )
+        vnpu_type.eHardMode = engine_cffi.cast("AX_ENGINE_NPU_MODE_T", VNPUType.DISABLED.value)
     ret = engine_lib.AX_ENGINE_Init(vnpu_type)
     if ret != 0:
         raise RuntimeError("Failed to initialize ax sys engine.")
     _is_engine_initialized = True
 
-    print(f"[INFO] Chip type: {_get_chip_type()}")
-    print(f"[INFO] VNPU type: {_get_vnpu_type()}")
-    print(f"[INFO] Engine version: {_get_version()}")
+    logger.info(f"Chip type: {_get_chip_type()}")
+    logger.info(f"VNPU type: {_get_vnpu_type()}")
+    logger.info(f"Engine version: {_get_version()}")
 
 
 def _finalize_engine():
@@ -115,11 +95,11 @@ atexit.register(_finalize_engine)
 
 class AXEngineSession(Session):
     def __init__(
-            self,
-            path_or_bytes: str | bytes | os.PathLike,
-            sess_options: SessionOptions | None = None,
-            provider_options: dict[Any, Any] | None = None,
-            **kwargs,
+        self,
+        path_or_bytes: str | bytes | os.PathLike,
+        sess_options: SessionOptions | None = None,
+        provider_options: dict[Any, Any] | None = None,
+        **kwargs,
     ) -> None:
         super().__init__()
 
@@ -151,18 +131,18 @@ class AXEngineSession(Session):
         self._model_type = self._get_model_type()
         if self._chip_type is ChipType.MC20E:
             if self._model_type is ModelType.FULL:
-                print(f"[INFO] Model type: {self._model_type.value} (full core)")
+                logger.info(f"Model type: {self._model_type.value} (full core)")
             if self._model_type is ModelType.HALF:
-                print(f"[INFO] Model type: {self._model_type.value} (half core)")
+                logger.info(f"Model type: {self._model_type.value} (half core)")
         if self._chip_type is ChipType.MC50:
             if self._model_type is ModelType.SINGLE:
-                print(f"[INFO] Model type: {self._model_type.value} (single core)")
+                logger.info(f"Model type: {self._model_type.value} (single core)")
             if self._model_type is ModelType.DUAL:
-                print(f"[INFO] Model type: {self._model_type.value} (dual core)")
+                logger.info(f"Model type: {self._model_type.value} (dual core)")
             if self._model_type is ModelType.TRIPLE:
-                print(f"[INFO] Model type: {self._model_type.value} (triple core)")
+                logger.info(f"Model type: {self._model_type.value} (triple core)")
         if self._chip_type is ChipType.M57H:
-            print(f"[INFO] Model type: {self._model_type.value} (single core)")
+            logger.info(f"Model type: {self._model_type.value} (single core)")
 
         # check model type
         if self._chip_type is ChipType.MC50:
@@ -174,10 +154,7 @@ class AXEngineSession(Session):
                     raise ValueError(
                         f"Model type '{self._model_type}' is not allowed when vnpu is inited as {self._vnpu_type}."
                     )
-            if (
-                    self._vnpu_type is VNPUType.BIG_LITTLE
-                    or self._vnpu_type is VNPUType.LITTLE_BIG
-            ):
+            if self._vnpu_type is VNPUType.BIG_LITTLE or self._vnpu_type is VNPUType.LITTLE_BIG:
                 if self._model_type is ModelType.TRIPLE:
                     raise ValueError(
                         f"Model type '{self._model_type}' is not allowed when vnpu is inited as {self._vnpu_type}."
@@ -197,13 +174,13 @@ class AXEngineSession(Session):
         ret = self._load()
         if 0 != ret:
             raise RuntimeError("Failed to load model.")
-        print(f"[INFO] Compiler version: {self._get_model_tool_version()}")
+        logger.info(f"Compiler version: {self._get_model_tool_version()}")
 
         # get shape group count
         try:
             self._shape_count = self._get_shape_count()
         except AttributeError as e:
-            print(f"[WARNING] {e}")
+            logger.warning(f"{e}")
             self._shape_count = 1
 
         # get model shape
@@ -216,12 +193,8 @@ class AXEngineSession(Session):
         self._cmm_token = engine_cffi.new("AX_S8[]", b"PyEngine")
         self._io[0].nInputSize = len(self.get_inputs())
         self._io[0].nOutputSize = len(self.get_outputs())
-        _inputs= engine_cffi.new(
-            "AX_ENGINE_IO_BUFFER_T[{}]".format(self._io[0].nInputSize)
-        )
-        _outputs = engine_cffi.new(
-            "AX_ENGINE_IO_BUFFER_T[{}]".format(self._io[0].nOutputSize)
-        )
+        _inputs = engine_cffi.new("AX_ENGINE_IO_BUFFER_T[{}]".format(self._io[0].nInputSize))
+        _outputs = engine_cffi.new("AX_ENGINE_IO_BUFFER_T[{}]".format(self._io[0].nOutputSize))
         self._io_buffers = (_inputs, _outputs)
         self._io[0].pInputs = _inputs
         self._io[0].pOutputs = _outputs
@@ -235,9 +208,7 @@ class AXEngineSession(Session):
             phy = engine_cffi.new("AX_U64*")
             vir = engine_cffi.new("AX_VOID**")
             self._io_inputs_pool.append((phy, vir))
-            ret = sys_lib.AX_SYS_MemAllocCached(
-                phy, vir, self._io[0].pInputs[i].nSize, self._align, self._cmm_token
-            )
+            ret = sys_lib.AX_SYS_MemAllocCached(phy, vir, self._io[0].pInputs[i].nSize, self._align, self._cmm_token)
             if 0 != ret:
                 raise RuntimeError("Failed to allocate memory for input.")
             self._io[0].pInputs[i].phyAddr = phy[0]
@@ -252,30 +223,31 @@ class AXEngineSession(Session):
             phy = engine_cffi.new("AX_U64*")
             vir = engine_cffi.new("AX_VOID**")
             self._io_outputs_pool.append((phy, vir))
-            ret = sys_lib.AX_SYS_MemAllocCached(
-                phy, vir, self._io[0].pOutputs[i].nSize, self._align, self._cmm_token
-            )
+            ret = sys_lib.AX_SYS_MemAllocCached(phy, vir, self._io[0].pOutputs[i].nSize, self._align, self._cmm_token)
             if 0 != ret:
                 raise RuntimeError("Failed to allocate memory for output.")
             self._io[0].pOutputs[i].phyAddr = phy[0]
             self._io[0].pOutputs[i].pVirAddr = vir[0]
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._unload()
+        return False
 
     def __del__(self):
         self._unload()
 
     def _get_model_type(self) -> ModelType:
         model_type = engine_cffi.new("AX_ENGINE_MODEL_TYPE_T *")
-        ret = engine_lib.AX_ENGINE_GetModelType(
-            self._model_buffer, self._model_buffer_size, model_type
-        )
+        ret = engine_lib.AX_ENGINE_GetModelType(self._model_buffer, self._model_buffer_size, model_type)
         if 0 != ret:
             raise RuntimeError("Failed to get model type.")
         return ModelType(model_type[0])
 
     def _get_model_tool_version(self):
-        model_tool_version = engine_lib.AX_ENGINE_GetModelToolsVersion(
-            self._handle[0]
-        )
+        model_tool_version = engine_lib.AX_ENGINE_GetModelToolsVersion(self._handle[0])
         return engine_cffi.string(model_tool_version).decode("utf-8")
 
     def _load(self):
@@ -285,13 +257,9 @@ class AXEngineSession(Session):
 
         # for onnx runtime do not support one model multiple context running in multi-thread as far as I know, so
         # the engine handle and context will create only once
-        ret = engine_lib.AX_ENGINE_CreateHandleV2(
-            self._handle, self._model_buffer, self._model_buffer_size, extra
-        )
+        ret = engine_lib.AX_ENGINE_CreateHandleV2(self._handle, self._model_buffer, self._model_buffer_size, extra)
         if 0 == ret:
-            ret = engine_lib.AX_ENGINE_CreateContextV2(
-                self._handle[0], self._context
-            )
+            ret = engine_lib.AX_ENGINE_CreateContextV2(self._handle[0], self._context)
         return ret
 
     def _get_info(self):
@@ -305,9 +273,7 @@ class AXEngineSession(Session):
         else:
             for i in range(self._shape_count):
                 info = engine_cffi.new("AX_ENGINE_IO_INFO_T **")
-                ret = engine_lib.AX_ENGINE_GetGroupIOInfo(
-                    self._handle[0], i, info
-                )
+                ret = engine_lib.AX_ENGINE_GetGroupIOInfo(self._handle[0], i, info)
                 if 0 != ret:
                     raise RuntimeError(f"Failed to get model the {i}th shape.")
                 total_info.append(info)
@@ -329,8 +295,8 @@ class AXEngineSession(Session):
         io_info = []
         for group in range(self._shape_count):
             one_group_io = []
-            for index in range(getattr(self._info[group][0], f'n{io_type}Size')):
-                current_io = getattr(self._info[group][0], f'p{io_type}s')[index]
+            for index in range(getattr(self._info[group][0], f"n{io_type}Size")):
+                current_io = getattr(self._info[group][0], f"p{io_type}s")[index]
                 name = engine_cffi.string(current_io.pName).decode("utf-8")
                 shape = [current_io.pShape[i] for i in range(current_io.nShapeSize)]
                 dtype = _transform_dtype(current_io.eDataType)
@@ -340,18 +306,12 @@ class AXEngineSession(Session):
         return io_info
 
     def _get_inputs(self):
-        return self._get_io('Input')
+        return self._get_io("Input")
 
     def _get_outputs(self):
-        return self._get_io('Output')
+        return self._get_io("Output")
 
-    def run(
-            self,
-            output_names: list[str],
-            input_feed: dict[str, np.ndarray],
-            run_options=None,
-            shape_group: int = 0
-    ):
+    def run(self, output_names: list[str], input_feed: dict[str, np.ndarray], run_options=None, shape_group: int = 0):
         self._validate_input(input_feed)
         self._validate_output(output_names)
 
@@ -365,17 +325,15 @@ class AXEngineSession(Session):
         for key, npy in input_feed.items():
             for i, one in enumerate(self.get_inputs(shape_group)):
                 if one.name == key:
-                    assert (
-                            list(one.shape) == list(npy.shape) and one.dtype == npy.dtype
-                    ), f"model inputs({key}) expect shape {one.shape} and dtype {one.dtype}, however gets input with shape {npy.shape} and dtype {npy.dtype}"
+                    assert list(one.shape) == list(npy.shape) and one.dtype == npy.dtype, (
+                        f"model inputs({key}) expect shape {one.shape} and dtype {one.dtype}, however gets input with shape {npy.shape} and dtype {npy.dtype}"
+                    )
 
                     if not (npy.flags.c_contiguous or npy.flags.f_contiguous):
                         npy = np.ascontiguousarray(npy)
                     npy_ptr = engine_cffi.cast("void *", npy.ctypes.data)
 
-                    engine_cffi.memmove(
-                        self._io[0].pInputs[i].pVirAddr, npy_ptr, npy.nbytes
-                    )
+                    engine_cffi.memmove(self._io[0].pInputs[i].pVirAddr, npy_ptr, npy.nbytes)
                     sys_lib.AX_SYS_MflushCache(
                         self._io[0].pInputs[i].phyAddr,
                         self._io[0].pInputs[i].pVirAddr,
@@ -385,13 +343,9 @@ class AXEngineSession(Session):
 
         # execute model
         if self._shape_count > 1:
-            ret = engine_lib.AX_ENGINE_RunGroupIOSync(
-                self._handle[0], self._context[0], shape_group, self._io
-            )
+            ret = engine_lib.AX_ENGINE_RunGroupIOSync(self._handle[0], self._context[0], shape_group, self._io)
         else:
-            ret = engine_lib.AX_ENGINE_RunSyncV2(
-                self._handle[0], self._context[0], self._io
-            )
+            ret = engine_lib.AX_ENGINE_RunSyncV2(self._handle[0], self._context[0], self._io)
 
         # flush output
         outputs = []
@@ -404,13 +358,17 @@ class AXEngineSession(Session):
                     self._io[0].pOutputs[i].pVirAddr,
                     self._io[0].pOutputs[i].nSize,
                 )
-                npy_size = self.get_outputs(shape_group)[i].dtype.itemsize * np.prod(self.get_outputs(shape_group)[i].shape)
-                npy = np.frombuffer(
-                    engine_cffi.buffer(
-                        self._io[0].pOutputs[i].pVirAddr, npy_size
-                    ),
-                    dtype=self.get_outputs(shape_group)[i].dtype,
-                ).reshape(self.get_outputs(shape_group)[i].shape).copy()
+                npy_size = self.get_outputs(shape_group)[i].dtype.itemsize * np.prod(
+                    self.get_outputs(shape_group)[i].shape
+                )
+                npy = (
+                    np.frombuffer(
+                        engine_cffi.buffer(self._io[0].pOutputs[i].pVirAddr, npy_size),
+                        dtype=self.get_outputs(shape_group)[i].dtype,
+                    )
+                    .reshape(self.get_outputs(shape_group)[i].shape)
+                    .copy()
+                )
                 name = self.get_outputs(shape_group)[i].name
                 if name in output_names:
                     outputs.append(npy)

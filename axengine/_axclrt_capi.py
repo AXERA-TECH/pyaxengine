@@ -190,9 +190,9 @@ axclrt_cffi.cdef(
 
 rt_name = "axcl_rt"
 rt_path = ctypes.util.find_library(rt_name)
-assert (
-        rt_path is not None
-), f"Failed to find library {rt_name}. Please ensure it is installed and in the library path."
+if rt_path is None:
+    raise ImportError(f"Failed to find library {rt_name}. Please ensure it is installed and in the library path.")
 
 axclrt_lib = axclrt_cffi.dlopen(rt_path)
-assert axclrt_lib is not None, f"Failed to load library {rt_path}. Please ensure it is installed and in the library path."
+if axclrt_lib is None:
+    raise ImportError(f"Failed to load library {rt_path}. Please ensure it is installed and in the library path.")

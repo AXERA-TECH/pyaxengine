@@ -11,13 +11,16 @@ import os
 import time
 from typing import Any, Sequence
 
-import ml_dtypes as mldt
 import numpy as np
 
 from ._axclrt_capi import axclrt_cffi, axclrt_lib
 from ._axclrt_types import VNPUType, ModelType
 from ._base_session import Session, SessionOptions
 from ._node import NodeArg
+from ._utils import _transform_dtype_axclrt as _transform_dtype
+from ._logging import get_logger
+
+logger = get_logger(__name__)
 
 __all__: ["AXCLRTSession"]
 
@@ -25,26 +28,6 @@ _is_axclrt_initialized = False
 _is_axclrt_engine_initialized = False
 _all_model_instances = []
 
-
-def _transform_dtype(dtype):
-    if dtype == axclrt_cffi.cast("axclrtEngineDataType", axclrt_lib.AXCL_DATA_TYPE_UINT8):
-        return np.dtype(np.uint8)
-    elif dtype == axclrt_cffi.cast("axclrtEngineDataType", axclrt_lib.AXCL_DATA_TYPE_INT8):
-        return np.dtype(np.int8)
-    elif dtype == axclrt_cffi.cast("axclrtEngineDataType", axclrt_lib.AXCL_DATA_TYPE_UINT16):
-        return np.dtype(np.uint16)
-    elif dtype == axclrt_cffi.cast("axclrtEngineDataType", axclrt_lib.AXCL_DATA_TYPE_INT16):
-        return np.dtype(np.int16)
-    elif dtype == axclrt_cffi.cast("axclrtEngineDataType", axclrt_lib.AXCL_DATA_TYPE_UINT32):
-        return np.dtype(np.uint32)
-    elif dtype == axclrt_cffi.cast("axclrtEngineDataType", axclrt_lib.AXCL_DATA_TYPE_INT32):
-        return np.dtype(np.int32)
-    elif dtype == axclrt_cffi.cast("axclrtEngineDataType", axclrt_lib.AXCL_DATA_TYPE_FP32):
-        return np.dtype(np.float32)
-    elif dtype == axclrt_cffi.cast("axclrtEngineDataType", axclrt_lib.AXCL_DATA_TYPE_BF16):
-        return np.dtype(mldt.bfloat16)
-    else:
-        raise ValueError(f"Unsupported data type '{dtype}'.")
 
 def _initialize_axclrt():
     global _is_axclrt_initialized
@@ -79,19 +62,18 @@ def _get_vnpu_type() -> VNPUType:
 
 
 def _get_version():
-    major, minor, patch = axclrt_cffi.new('int32_t *'), axclrt_cffi.new('int32_t *'), axclrt_cffi.new(
-        'int32_t *')
+    major, minor, patch = axclrt_cffi.new("int32_t *"), axclrt_cffi.new("int32_t *"), axclrt_cffi.new("int32_t *")
     axclrt_lib.axclrtGetVersion(major, minor, patch)
-    return f'{major[0]}.{minor[0]}.{patch[0]}'
+    return f"{major[0]}.{minor[0]}.{patch[0]}"
 
 
 class AXCLRTSession(Session):
     def __init__(
-            self,
-            path_or_bytes: str | bytes | os.PathLike,
-            sess_options: SessionOptions | None = None,
-            provider_options: dict[Any, Any] | None = None,
-            **kwargs,
+        self,
+        path_or_bytes: str | bytes | os.PathLike,
+        sess_options: SessionOptions | None = None,
+        provider_options: dict[Any, Any] | None = None,
+        **kwargs,
     ) -> None:
         super().__init__()
 
@@ -116,9 +98,7 @@ class AXCLRTSession(Session):
             raise RuntimeError(f"Set AXCL device failed 0x{ret:08x}.")
 
         global _is_axclrt_engine_initialized
-        vnpu_type = axclrt_cffi.cast(
-            "axclrtEngineVNpuKind", VNPUType.DISABLED.value
-        )
+        vnpu_type = axclrt_cffi.cast("axclrtEngineVNpuKind", VNPUType.DISABLED.value)
         # try to initialize NPU as disabled
         ret = axclrt_lib.axclrtEngineInit(vnpu_type)
         # if failed, try to get vnpu type
@@ -136,13 +116,13 @@ class AXCLRTSession(Session):
             #   it because the api looks like onnxruntime, so there no window avoid this.
             # such as the life.
             else:
-                print(f"[WARNING] Failed to initialize NPU as {vnpu_type}, NPU is already initialized as {vnpu.value}.")
+                logger.warning(f"Failed to initialize NPU as {vnpu_type}, NPU is already initialized as {vnpu.value}.")
         # initialize NPU successfully, mark the flag to ensure the engine will be finalized
         else:
             _is_axclrt_engine_initialized = True
 
         self.soc_name = axclrt_cffi.string(axclrt_lib.axclrtGetSocName()).decode()
-        print(f"[INFO] SOC Name: {self.soc_name}")
+        logger.info(f"SOC Name: {self.soc_name}")
 
         self._thread_context = axclrt_cffi.new("axclrtContext *")
         ret = axclrt_lib.axclrtGetCurrentContext(self._thread_context)
@@ -155,13 +135,13 @@ class AXCLRTSession(Session):
 
         # get vnpu type
         self._vnpu_type = _get_vnpu_type()
-        print(f"[INFO] VNPU type: {self._vnpu_type}")
+        logger.info(f"VNPU type: {self._vnpu_type}")
 
         # load model
         ret = self._load(path_or_bytes)
         if 0 != ret:
             raise RuntimeError("Failed to load model.")
-        print(f"[INFO] Compiler version: {self._get_model_tool_version()}")
+        logger.info(f"Compiler version: {self._get_model_tool_version()}")
 
         # get model info
         self._info = self._get_info()
@@ -178,10 +158,17 @@ class AXCLRTSession(Session):
         self._unload()
         _all_model_instances.remove(self)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._unload()
+        return False
+
     def _load(self, path_or_bytes):
         # model buffer, almost copied from onnx runtime
         if isinstance(path_or_bytes, (str, os.PathLike)):
-            _model_path = axclrt_cffi.new("char[]", path_or_bytes.encode('utf-8'))
+            _model_path = axclrt_cffi.new("char[]", path_or_bytes.encode("utf-8"))
             ret = axclrt_lib.axclrtEngineLoadFromFile(_model_path, self._model_id)
             if ret != 0:
                 raise RuntimeError("axclrtEngineLoadFromFile failed.")
@@ -189,12 +176,14 @@ class AXCLRTSession(Session):
             _model_buffer = axclrt_cffi.new("char[]", path_or_bytes)
             _model_buffer_size = len(path_or_bytes)
 
-            dev_mem_ptr = axclrt_cffi.new('void **', axclrt_cffi.NULL)
+            dev_mem_ptr = axclrt_cffi.new("void **", axclrt_cffi.NULL)
             ret = axclrt_lib.axclrtMalloc(dev_mem_ptr, _model_buffer_size, axclrt_lib.AXCL_MEM_MALLOC_NORMAL_ONLY)
             if ret != 0:
                 raise RuntimeError("axclrtMalloc failed.")
 
-            ret = axclrt_lib.axclrtMemcpy(dev_mem_ptr[0], _model_buffer, _model_buffer_size, axclrt_lib.AXCL_MEMCPY_HOST_TO_DEVICE)
+            ret = axclrt_lib.axclrtMemcpy(
+                dev_mem_ptr[0], _model_buffer, _model_buffer_size, axclrt_lib.AXCL_MEMCPY_HOST_TO_DEVICE
+            )
             if ret != 0:
                 axclrt_lib.axclrtFree(dev_mem_ptr[0])
                 raise RuntimeError("axclrtMemcpy failed.")
@@ -276,7 +265,7 @@ class AXCLRTSession(Session):
         for group in range(self._shape_count):
             one_group_io = []
             for index in range(axclrt_lib.axclrtEngineGetNumOutputs(self._info[0])):
-                cffi_name  = axclrt_lib.axclrtEngineGetOutputNameByIndex(self._info[0], index)
+                cffi_name = axclrt_lib.axclrtEngineGetOutputNameByIndex(self._info[0], index)
                 name = axclrt_cffi.string(cffi_name).decode("utf-8")
 
                 cffi_dtype = axclrt_cffi.new("axclrtEngineDataType *")
@@ -327,13 +316,7 @@ class AXCLRTSession(Session):
                 raise RuntimeError(f"axclrtEngineSetOutputBufferByIndex failed 0x{ret:08x} for output {i}.")
         return _io
 
-    def run(
-            self,
-            output_names: list[str],
-            input_feed: dict[str, np.ndarray],
-            run_options=None,
-            shape_group: int = 0
-    ):
+    def run(self, output_names: list[str], input_feed: dict[str, np.ndarray], run_options=None, shape_group: int = 0):
         self._validate_input(input_feed)
         self._validate_output(output_names)
 
@@ -353,9 +336,9 @@ class AXCLRTSession(Session):
         for key, npy in input_feed.items():
             for i, one in enumerate(self.get_inputs(shape_group)):
                 if one.name == key:
-                    assert (
-                            list(one.shape) == list(npy.shape) and one.dtype == npy.dtype
-                    ), f"model inputs({key}) expect shape {one.shape} and dtype {one.dtype}, howerver gets input with shape {npy.shape} and dtype {npy.dtype}"
+                    assert list(one.shape) == list(npy.shape) and one.dtype == npy.dtype, (
+                        f"model inputs({key}) expect shape {one.shape} and dtype {one.dtype}, howerver gets input with shape {npy.shape} and dtype {npy.dtype}"
+                    )
 
                     if not (npy.flags.c_contiguous or npy.flags.f_contiguous):
                         npy = np.ascontiguousarray(npy)
@@ -363,7 +346,9 @@ class AXCLRTSession(Session):
                     ret = axclrt_lib.axclrtEngineGetInputBufferByIndex(self._io[0], i, dev_prt, dev_size)
                     if 0 != ret:
                         raise RuntimeError(f"axclrtEngineGetInputBufferByIndex failed for input {i}.")
-                    ret = axclrt_lib.axclrtMemcpy(dev_prt[0], npy_ptr, npy.nbytes, axclrt_lib.AXCL_MEMCPY_HOST_TO_DEVICE)
+                    ret = axclrt_lib.axclrtMemcpy(
+                        dev_prt[0], npy_ptr, npy.nbytes, axclrt_lib.AXCL_MEMCPY_HOST_TO_DEVICE
+                    )
                     if 0 != ret:
                         raise RuntimeError(f"axclrtMemcpy failed for input {i}.")
 
@@ -380,7 +365,9 @@ class AXCLRTSession(Session):
                 if 0 != ret:
                     raise RuntimeError(f"axclrtEngineGetOutputBufferByIndex failed for output {i}.")
                 buffer_addr = dev_prt[0]
-                npy_size = self.get_outputs(shape_group)[i].dtype.itemsize * np.prod(self.get_outputs(shape_group)[i].shape)
+                npy_size = self.get_outputs(shape_group)[i].dtype.itemsize * np.prod(
+                    self.get_outputs(shape_group)[i].shape
+                )
                 npy = np.zeros(self.get_outputs(shape_group)[i].shape, dtype=self.get_outputs(shape_group)[i].dtype)
                 npy_ptr = axclrt_cffi.cast("void *", npy.ctypes.data)
                 ret = axclrt_lib.axclrtMemcpy(npy_ptr, buffer_addr, npy_size, axclrt_lib.AXCL_MEMCPY_DEVICE_TO_HOST)

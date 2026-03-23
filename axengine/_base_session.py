@@ -14,9 +14,13 @@ from ._node import NodeArg
 
 
 class SessionOptions:
-    """Session configuration options."""
+    """Configuration options for session initialization.
 
-    pass
+    Stores session-level configuration parameters used when creating
+    and initializing a session instance.
+    """
+
+    pass  # Placeholder for future session configuration options
 
 
 class Session(ABC):

@@ -39,12 +39,12 @@ sys_cffi.cdef(
 
 sys_name = "ax_sys"
 sys_path = ctypes.util.find_library(sys_name)
-assert (
-    sys_path is not None
-), f"Failed to find library {sys_name}. Please ensure it is installed and in the library path."
+if sys_path is None:
+    raise ImportError(f"Failed to find library {sys_name}. Please ensure it is installed and in the library path.")
 
 sys_lib = sys_cffi.dlopen(sys_path)
-assert sys_lib is not None, f"Failed to load library {sys_path}. Please ensure it is installed and in the library path."
+if sys_lib is None:
+    raise ImportError(f"Failed to load library {sys_path}. Please ensure it is installed and in the library path.")
 
 engine_cffi = FFI()
 
@@ -315,9 +315,11 @@ engine_cffi.cdef(
 
 engine_name = "ax_engine"
 engine_path = ctypes.util.find_library(engine_name)
-assert (
-    engine_path is not None
-), f"Failed to find library {engine_name}. Please ensure it is installed and in the library path."
+assert engine_path is not None, (
+    f"Failed to find library {engine_name}. Please ensure it is installed and in the library path."
+)
 
 engine_lib = engine_cffi.dlopen(engine_path)
-assert engine_lib is not None, f"Failed to load library {engine_path}. Please ensure it is installed and in the library path."
+assert engine_lib is not None, (
+    f"Failed to load library {engine_path}. Please ensure it is installed and in the library path."
+)
