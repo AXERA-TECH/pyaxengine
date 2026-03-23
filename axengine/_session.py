@@ -6,7 +6,7 @@
 #
 
 import os
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, cast
 
 import numpy as np
 
@@ -33,10 +33,10 @@ class InferenceSession:
 
     def __init__(
         self,
-        path_or_bytes: Union[str, bytes, os.PathLike],
-        sess_options: Optional[SessionOptions] = None,
-        providers: Optional[Sequence[Union[str, Tuple[str, Dict[Any, Any]]]]] = None,
-        provider_options: Optional[Sequence[Dict[Any, Any]]] = None,
+        path_or_bytes: str | bytes | os.PathLike,
+        sess_options: SessionOptions | None = None,
+        providers: str | list[str | tuple[str, dict[Any, Any]]] | None = None,
+        provider_options: list[dict[Any, Any]] | None = None,
         **kwargs,
     ) -> None:
         """Initialize an InferenceSession.
@@ -54,11 +54,12 @@ class InferenceSession:
             TypeError: If provider format is invalid.
             RuntimeError: If session creation fails.
         """
-        self._sess: Optional[Union[Any, Any]] = None
+        self._sess: Any
         self._sess_options = sess_options
-        self._provider: Optional[str] = None
-        self._provider_options: Optional[Dict[Any, Any]] = None
+        self._provider: str | None = None
+        self._provider_options: dict[Any, Any] | None = None
         self._available_providers = get_available_providers()
+        sess: Any | None = None
 
         # the providers should be available at least one, checked in __init__.py
         if providers is None:
@@ -113,27 +114,25 @@ class InferenceSession:
         if self._provider == axclrt_provider_name:
             from ._axclrt import AXCLRTSession
 
-            self._sess = AXCLRTSession(path_or_bytes, sess_options, provider_opts, **kwargs)
+            sess = AXCLRTSession(path_or_bytes, sess_options, provider_opts, **kwargs)
         if self._provider == axengine_provider_name:
             from ._axe import AXEngineSession
 
-            self._sess = AXEngineSession(path_or_bytes, sess_options, provider_opts, **kwargs)
-        if self._sess is None:
+            sess = AXEngineSession(path_or_bytes, sess_options, provider_opts, **kwargs)
+        if sess is None:
             raise RuntimeError(f"Create session failed with provider: {self._provider}")
+        self._sess = sess
 
     def __enter__(self):
         """Enter context manager."""
-        if self._sess is not None:
-            self._sess.__enter__()
+        self._sess.__enter__()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         """Exit context manager."""
-        if self._sess is not None:
-            return self._sess.__exit__(exc_type, exc_value, traceback)
-        return False
+        return self._sess.__exit__(exc_type, exc_value, traceback)
 
-    def get_session_options(self):
+    def get_session_options(self) -> SessionOptions | None:
         """Get session options.
 
         Returns:
@@ -141,7 +140,7 @@ class InferenceSession:
         """
         return self._sess_options
 
-    def get_providers(self):
+    def get_providers(self) -> str | None:
         """Get the execution provider name.
 
         Returns:
@@ -149,32 +148,44 @@ class InferenceSession:
         """
         return self._provider
 
-    def get_inputs(self, shape_group: int = 0) -> List[NodeArg]:
-        if self._sess is None:
-            raise RuntimeError("Session not initialized")
-        result = self._sess.get_inputs(shape_group)
-        if not isinstance(result, list):
-            raise RuntimeError("Invalid session response")
-        return result
+    def get_inputs(self, shape_group: int = 0) -> list[NodeArg]:
+        """Get model input metadata.
 
-    def get_outputs(self, shape_group: int = 0) -> List[NodeArg]:
-        if self._sess is None:
-            raise RuntimeError("Session not initialized")
-        result = self._sess.get_outputs(shape_group)
-        if not isinstance(result, list):
-            raise RuntimeError("Invalid session response")
-        return result
+        Args:
+            shape_group: Shape group index for dynamic-shape models.
+
+        Returns:
+            list[NodeArg]: Input node metadata.
+        """
+        return cast(list[NodeArg], self._sess.get_inputs(shape_group))
+
+    def get_outputs(self, shape_group: int = 0) -> list[NodeArg]:
+        """Get model output metadata.
+
+        Args:
+            shape_group: Shape group index for dynamic-shape models.
+
+        Returns:
+            list[NodeArg]: Output node metadata.
+        """
+        return cast(list[NodeArg], self._sess.get_outputs(shape_group))
 
     def run(
         self,
-        output_names: Optional[List[str]],
-        input_feed: Dict[str, np.ndarray],
-        run_options: Optional[object] = None,
+        output_names: list[str] | None,
+        input_feed: dict[str, np.ndarray],
+        run_options: object | None = None,
         shape_group: int = 0,
-    ) -> List[np.ndarray]:
-        if self._sess is None:
-            raise RuntimeError("Session not initialized")
-        result = self._sess.run(output_names, input_feed, run_options, shape_group)
-        if not isinstance(result, list):
-            raise RuntimeError("Invalid session response")
-        return result
+    ) -> list[np.ndarray]:
+        """Run inference with given model inputs.
+
+        Args:
+            output_names: Optional output names to fetch, or None for all outputs.
+            input_feed: Input tensor mapping keyed by model input name.
+            run_options: Optional runtime options for provider-specific execution.
+            shape_group: Shape group index for dynamic-shape models.
+
+        Returns:
+            list[np.ndarray]: Inference outputs in model-defined order.
+        """
+        return cast(list[np.ndarray], self._sess.run(output_names, input_feed, run_options, shape_group))
