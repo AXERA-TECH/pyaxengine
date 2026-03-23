@@ -6,11 +6,10 @@
 #
 
 import ctypes.util
-from typing import List
 
 from cffi import FFI
 
-__all__: List[str] = ["axclrt_cffi", "axclrt_lib"]
+__all__: list[str] = ["axclrt_cffi", "axclrt_lib"]
 
 axclrt_cffi = FFI()
 
