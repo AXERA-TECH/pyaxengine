@@ -370,7 +370,7 @@ class AXEngineSession(Session):
                 npy = (
                     np.frombuffer(
                         engine_cffi.buffer(self._io[0].pOutputs[i].pVirAddr, npy_size),
-                        dtype=self.get_outputs(shape_group)[i].dtype,
+                        dtype=self.get_outputs(shape_group)[i].dtype,  # type: ignore[call-overload]
                     )
                     .reshape(self.get_outputs(shape_group)[i].shape)
                     .copy()
