@@ -31,4 +31,4 @@ jobs:
       run: mypy axengine
     
     - name: Test with pytest
-      run: pytest --cov=axengine --cov-report=term-missing
+      run: pytest -m "not hardware" --cov=axengine --cov-report=term-missing

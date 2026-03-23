@@ -30,8 +30,6 @@ logger = get_logger(__name__)
 _available_providers = get_available_providers()
 
 if not _available_providers:
-    raise ImportError(
-        "No execution providers available. Please ensure either ax_engine or axcl_rt library is installed."
-    )
-
-logger.info("Available providers: %s", _available_providers)
+    logger.warning("No execution providers available. Please ensure either ax_engine or axcl_rt library is installed.")
+else:
+    logger.info("Available providers: %s", _available_providers)
