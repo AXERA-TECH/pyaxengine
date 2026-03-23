@@ -7,7 +7,7 @@
 
 import atexit
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import numpy as np
 
@@ -94,11 +94,18 @@ atexit.register(_finalize_engine)
 
 
 class AXEngineSession(Session):
+    """ONNXRuntime-compatible inference session backed by AxEngine runtime.
+
+    This session loads an AX model from a file path or in-memory bytes,
+    prepares input/output metadata, and executes synchronous inference through
+    the Axera engine C API.
+    """
+
     def __init__(
         self,
-        path_or_bytes: Union[str, bytes, os.PathLike],
-        sess_options: Optional[SessionOptions] = None,
-        provider_options: Optional[Dict[Any, Any]] = None,
+        path_or_bytes: str | bytes | os.PathLike[str],
+        sess_options: SessionOptions | None = None,
+        provider_options: dict[Any, Any] | None = None,
         **kwargs,
     ) -> None:
         super().__init__()
@@ -313,16 +320,17 @@ class AXEngineSession(Session):
 
     def run(
         self,
-        output_names: Optional[List[str]],
-        input_feed: Dict[str, np.ndarray],
-        run_options: Optional[object] = None,
+        output_names: list[str] | None,
+        input_feed: dict[str, np.ndarray],
+        run_options: object | None = None,
         shape_group: int = 0,
-    ) -> List[np.ndarray]:
+    ) -> list[np.ndarray]:
         self._validate_input(input_feed)
         self._validate_output(output_names)
 
         if None is output_names:
             output_names = [o.name for o in self.get_outputs(shape_group)]
+        assert output_names is not None
 
         if (shape_group > self._shape_count - 1) or (shape_group < 0):
             raise ValueError(f"Invalid shape group: {shape_group}")
