@@ -7,16 +7,16 @@
 
 import atexit
 import os
-from typing import Any, Sequence
+from typing import Any
 
 import numpy as np
 
-from ._axe_capi import sys_lib, engine_cffi, engine_lib
-from ._axe_types import VNPUType, ModelType, ChipType
+from ._axe_capi import engine_cffi, engine_lib, sys_lib
+from ._axe_types import ChipType, ModelType, VNPUType
 from ._base_session import Session, SessionOptions
+from ._logging import get_logger
 from ._node import NodeArg
 from ._utils import _transform_dtype
-from ._logging import get_logger
 
 logger = get_logger(__name__)
 

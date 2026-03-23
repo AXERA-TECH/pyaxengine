@@ -58,7 +58,7 @@ engine_cffi.cdef(
     typedef signed char                 AX_S8;
     typedef char                        AX_CHAR;
     typedef void                        AX_VOID;
-    
+
     typedef enum {
         AX_FALSE = 0,
         AX_TRUE  = 1,
@@ -148,13 +148,13 @@ engine_cffi.cdef(
         AX_ENGINE_COLOR_SPACE_T         eColorSpace;
         AX_U64                          u64Reserved[18];
     } AX_ENGINE_IO_META_EX_T;
-    
+
     typedef struct {
         AX_ENGINE_NPU_SET_T             nNpuSet;
         AX_S8*                          pName;
         AX_U32                          reserve[8];
     } AX_ENGINE_HANDLE_EXTRA_T;
-    
+
     typedef struct _AX_ENGINE_CMM_INFO_T
     {
         AX_U32                          nCMMSize;

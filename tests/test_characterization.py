@@ -4,7 +4,6 @@ Characterization tests for PyAXEngine - capturing current behavior.
 These tests document the current state of the API, including any bugs.
 DO NOT fix bugs here - just record what currently happens.
 """
-import sys
 import pytest
 
 
@@ -12,7 +11,7 @@ import pytest
 def mock_providers(monkeypatch):
     """Mock providers to allow import without hardware."""
     monkeypatch.setattr('axengine._providers.providers', ['AxEngineExecutionProvider'])
-    
+
 
 def test_axengine_imports():
     """Test that basic axengine imports work."""
@@ -43,6 +42,7 @@ def test_session_options_creation():
 def test_inference_session_signature():
     """Test InferenceSession has expected __init__ signature."""
     import inspect
+
     from axengine import InferenceSession
     sig = inspect.signature(InferenceSession.__init__)
     params = list(sig.parameters.keys())

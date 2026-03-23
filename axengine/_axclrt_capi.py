@@ -29,13 +29,13 @@ axclrt_cffi.cdef(
         uint32_t num;
         int32_t devices[AXCL_MAX_DEVICE_COUNT];
     } axclrtDeviceList;
-    
+
     typedef enum axclrtMemMallocPolicy {
         AXCL_MEM_MALLOC_HUGE_FIRST,
         AXCL_MEM_MALLOC_HUGE_ONLY,
         AXCL_MEM_MALLOC_NORMAL_ONLY
     } axclrtMemMallocPolicy;
-    
+
     typedef enum axclrtMemcpyKind {
         AXCL_MEMCPY_HOST_TO_HOST,
         AXCL_MEMCPY_HOST_TO_DEVICE,     //!< host vir -> device phy
@@ -60,7 +60,7 @@ axclrt_cffi.cdef(
         AXCL_VNPU_BIG_LITTLE = 2,
         AXCL_VNPU_LITTLE_BIG = 3,
     } axclrtEngineVNpuKind;
-    
+
     typedef enum axclrtEngineDataType {
         AXCL_DATA_TYPE_NONE = 0,
         AXCL_DATA_TYPE_INT4 = 1,
@@ -80,13 +80,13 @@ axclrt_cffi.cdef(
         AXCL_DATA_TYPE_FP32 = 15,
         AXCL_DATA_TYPE_FP64 = 16,
     } axclrtEngineDataType;
-    
+
     typedef enum axclrtEngineDataLayout {
         AXCL_DATA_LAYOUT_NONE = 0,
         AXCL_DATA_LAYOUT_NHWC = 0,
         AXCL_DATA_LAYOUT_NCHW = 1,
     } axclrtEngineDataLayout;
-    
+
     typedef struct axclrtEngineIODims {
         int32_t dimCount;
         int32_t dims[AXCLRT_ENGINE_MAX_DIM_CNT];

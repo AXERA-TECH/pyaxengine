@@ -1,14 +1,15 @@
 """Pytest configuration for axengine tests."""
+
 import sys
 from unittest.mock import MagicMock, patch
 
-sys.modules['axengine._axe_capi'] = MagicMock()
-sys.modules['axengine._axclrt_capi'] = MagicMock()
-
-with patch('ctypes.util.find_library', return_value='libax_engine.so'):
-    import axengine._providers
-
 import pytest
+
+sys.modules["axengine._axe_capi"] = MagicMock()
+sys.modules["axengine._axclrt_capi"] = MagicMock()
+
+with patch("ctypes.util.find_library", return_value="libax_engine.so"):
+    pass
 
 
 def pytest_configure(config):
@@ -18,4 +19,4 @@ def pytest_configure(config):
 
 @pytest.fixture(autouse=True)
 def mock_providers(monkeypatch):
-    monkeypatch.setattr('axengine._providers.providers', ['AxEngineExecutionProvider'])
+    monkeypatch.setattr("axengine._providers.providers", ["AxEngineExecutionProvider"])

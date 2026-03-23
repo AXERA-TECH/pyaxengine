@@ -8,17 +8,16 @@
 
 import atexit
 import os
-import time
-from typing import Any, Sequence
+from typing import Any
 
 import numpy as np
 
 from ._axclrt_capi import axclrt_cffi, axclrt_lib
-from ._axclrt_types import VNPUType, ModelType
+from ._axclrt_types import VNPUType
 from ._base_session import Session, SessionOptions
+from ._logging import get_logger
 from ._node import NodeArg
 from ._utils import _transform_dtype_axclrt as _transform_dtype
-from ._logging import get_logger
 
 logger = get_logger(__name__)
 

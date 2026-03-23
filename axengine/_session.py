@@ -13,8 +13,7 @@ import numpy as np
 from ._base_session import SessionOptions
 from ._logging import get_logger
 from ._node import NodeArg
-from ._providers import axclrt_provider_name, axengine_provider_name
-from ._providers import get_available_providers
+from ._providers import axclrt_provider_name, axengine_provider_name, get_available_providers
 
 logger = get_logger(__name__)
 

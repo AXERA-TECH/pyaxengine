@@ -10,7 +10,7 @@ def mock_providers(monkeypatch):
 class TestProviders:
 
     def test_get_all_providers(self):
-        from axengine._providers import get_all_providers, axengine_provider_name, axclrt_provider_name
+        from axengine._providers import axclrt_provider_name, axengine_provider_name, get_all_providers
         providers = get_all_providers()
         assert isinstance(providers, list)
         assert axengine_provider_name in providers
@@ -23,6 +23,6 @@ class TestProviders:
         assert isinstance(providers, list)
 
     def test_provider_names(self):
-        from axengine._providers import axengine_provider_name, axclrt_provider_name
+        from axengine._providers import axclrt_provider_name, axengine_provider_name
         assert axengine_provider_name == "AxEngineExecutionProvider"
         assert axclrt_provider_name == "AXCLRTExecutionProvider"

@@ -197,13 +197,13 @@ COCO_CATEGORIES = {
 
 
 def letterbox_yolov5(
-        im,
-        new_shape=(640, 640),
-        color=(114, 114, 114),
-        auto=True,
-        scaleFill=False,
-        scaleup=True,
-        stride=32,
+    im,
+    new_shape=(640, 640),
+    color=(114, 114, 114),
+    auto=True,
+    scaleFill=False,
+    scaleup=True,
+    stride=32,
 ):
     # Resize and pad image while meeting stride-multiple constraints
     shape = im.shape[:2]  # current shape [height, width]
@@ -233,9 +233,7 @@ def letterbox_yolov5(
         im = cv2.resize(im, new_unpad, interpolation=cv2.INTER_LINEAR)
     top, bottom = int(round(dh - 0.1)), int(round(dh + 0.1))
     left, right = int(round(dw - 0.1)), int(round(dw + 0.1))
-    im = cv2.copyMakeBorder(
-        im, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color
-    )  # add border
+    im = cv2.copyMakeBorder(im, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)  # add border
     return im, ratio, (dw, dh)
 
 
@@ -251,16 +249,14 @@ def draw_bbox(image, bboxes, classes=None, show_label=True, threshold=0.1):
     """
     bboxes: [x_min, y_min, x_max, y_max, probability, cls_id] format coordinates.
     """
-    if classes == None:
+    if classes is None:
         classes = {v: k for k, v in COCO_CATEGORIES.items()}
 
     num_classes = len(classes)
     image_h, image_w, _ = image.shape
     hsv_tuples = [(1.0 * x / num_classes, 1.0, 1.0) for x in range(num_classes)]
     colors = list(map(lambda x: colorsys.hsv_to_rgb(*x), hsv_tuples))
-    colors = list(
-        map(lambda x: (int(x[0] * 255), int(x[1] * 255), int(x[2] * 255)), colors)
-    )
+    colors = list(map(lambda x: (int(x[0] * 255), int(x[1] * 255), int(x[2] * 255)), colors))
 
     random.seed(0)
     random.shuffle(colors)
@@ -277,14 +273,10 @@ def draw_bbox(image, bboxes, classes=None, show_label=True, threshold=0.1):
         bbox_thick = int(0.6 * (image_h + image_w) / 600)
         c1, c2 = (coor[0], coor[1]), (coor[2], coor[3])
         cv2.rectangle(image, c1, c2, bbox_color, bbox_thick)
-        print(
-            f"  {class_ind:>3}: {CLASS_NAMES[class_ind]:<10}: {coor}, score: {score*100:3.2f}%"
-        )
+        print(f"  {class_ind:>3}: {CLASS_NAMES[class_ind]:<10}: {coor}, score: {score * 100:3.2f}%")
         if show_label:
             bbox_mess = "%s: %.2f" % (CLASS_NAMES[class_ind], score)
-            t_size = cv2.getTextSize(
-                bbox_mess, 0, fontScale, thickness=bbox_thick // 2
-            )[0]
+            t_size = cv2.getTextSize(bbox_mess, 0, fontScale, thickness=bbox_thick // 2)[0]
             cv2.rectangle(image, c1, (c1[0] + t_size[0], c1[1] - t_size[1] - 3), bbox_color, -1)
 
             cv2.putText(
@@ -347,9 +339,7 @@ def nms(proposals, iou_threshold, conf_threshold, multi_label=False):
         if nonzero_indices.size < 0:
             return
         i, j = nonzero_indices.T
-        bboxes = np.hstack(
-            (bboxes[i], proposals[i, j + 5][:, None], j[:, None].astype(float))
-        )
+        bboxes = np.hstack((bboxes[i], proposals[i, j + 5][:, None], j[:, None].astype(float)))
     else:
         confidences = proposals[:, 5:]
         conf = confidences.max(axis=1, keepdims=True)
@@ -373,9 +363,7 @@ def nms(proposals, iou_threshold, conf_threshold, multi_label=False):
             max_ind = np.argmax(cls_bboxes[:, 4])
             best_bbox = cls_bboxes[max_ind]
             best_bboxes.append(best_bbox)
-            cls_bboxes = np.concatenate(
-                [cls_bboxes[:max_ind], cls_bboxes[max_ind + 1:]]
-            )
+            cls_bboxes = np.concatenate([cls_bboxes[:max_ind], cls_bboxes[max_ind + 1 :]])
             iou = bboxes_iou(best_bbox[np.newaxis, :4], cls_bboxes[:, :4])
             weight = np.ones((len(iou),), dtype=np.float32)
 
@@ -427,12 +415,8 @@ def clip_coords(boxes, shape):
 
 def scale_coords(img1_shape, coords, img0_shape, ratio_pad=None):
     if ratio_pad is None:
-        gain = min(
-            img1_shape[0] / img0_shape[0], img1_shape[1] / img0_shape[1]
-        )  # gain  = old / new
-        pad = (img1_shape[1] - img0_shape[1] * gain) / 2, (
-                img1_shape[0] - img0_shape[0] * gain
-        ) / 2  # wh padding
+        gain = min(img1_shape[0] / img0_shape[0], img1_shape[1] / img0_shape[1])  # gain  = old / new
+        pad = (img1_shape[1] - img0_shape[1] * gain) / 2, (img1_shape[0] - img0_shape[0] * gain) / 2  # wh padding
     else:
         gain = ratio_pad[0][0]
         pad = ratio_pad[1]
@@ -453,8 +437,8 @@ def post_processing(outputs, origin_shape, input_shape):
     return pred
 
 
-def detect_yolov5(model_path, image_path, save_path, repeat_times, selected_provider='AUTO', selected_device_id=0):
-    if selected_provider == 'AUTO':
+def detect_yolov5(model_path, image_path, save_path, repeat_times, selected_provider="AUTO", selected_device_id=0):
+    if selected_provider == "AUTO":
         # Use AUTO to let the pyengine choose the first available provider
         session = axe.InferenceSession(model_path)
     else:
@@ -508,26 +492,20 @@ class ExampleParser(argparse.ArgumentParser):
 
 if __name__ == "__main__":
     ap = ExampleParser(description="YOLOv5 example")
-    ap.add_argument('-m', '--model-path', type=str, help='model path', required=True)
-    ap.add_argument('-i', '--image-path', type=str, help='image path', required=True)
+    ap.add_argument("-m", "--model-path", type=str, help="model path", required=True)
+    ap.add_argument("-i", "--image-path", type=str, help="image path", required=True)
+    ap.add_argument("-s", "--save-path", type=str, default="YOLOv5_OUT.jpg", help="detected  output image save path")
+    ap.add_argument("-r", "--repeat", type=int, help="repeat times", default=10)
     ap.add_argument(
-        '-s', "--save-path", type=str, default="YOLOv5_OUT.jpg", help="detected  output image save path"
-    )
-    ap.add_argument('-r', '--repeat', type=int, help='repeat times', default=10)
-    ap.add_argument(
-        '-p',
-        '--provider',
+        "-p",
+        "--provider",
         type=str,
         choices=["AUTO", f"{axclrt_provider_name}", f"{axengine_provider_name}"],
         help=f'"AUTO", "{axclrt_provider_name}", "{axengine_provider_name}"',
-        default='AUTO'
+        default="AUTO",
     )
     ap.add_argument(
-        '-d',
-        '--device-id',
-        type=int,
-        help=R'axclrt device index, depends on how many cards inserted',
-        default=0
+        "-d", "--device-id", type=int, help=R"axclrt device index, depends on how many cards inserted", default=0
     )
     args = ap.parse_args()
 

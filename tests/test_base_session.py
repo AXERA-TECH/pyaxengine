@@ -1,5 +1,5 @@
-import pytest
 import numpy as np
+import pytest
 
 
 @pytest.fixture(autouse=True)
@@ -25,7 +25,6 @@ class TestSessionOptions:
 class TestSession:
     def test_initialization(self):
         from axengine._base_session import Session
-        from axengine._node import NodeArg
 
         class MockSession(Session):
             def run(self, output_names, input_feed, run_options=None):
