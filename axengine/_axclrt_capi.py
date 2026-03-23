@@ -6,9 +6,9 @@
 #
 
 import ctypes.util
+from typing import List
 
 from cffi import FFI
-from typing import List
 
 __all__: List[str] = ["axclrt_cffi", "axclrt_lib"]
 

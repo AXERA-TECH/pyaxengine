@@ -6,7 +6,7 @@
 #
 
 import os
-from typing import Any, Sequence, Union, Dict, Optional, List, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 

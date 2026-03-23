@@ -7,7 +7,7 @@
 
 import atexit
 import os
-from typing import Any, Union, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 import numpy as np
 

@@ -6,7 +6,7 @@
 #
 
 from abc import ABC, abstractmethod
-from typing import Union, List, Dict, Optional
+from typing import Dict, List, Optional
 
 import numpy as np
 

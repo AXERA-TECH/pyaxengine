@@ -7,7 +7,6 @@
 
 import ctypes.util as cutil
 from typing import List
-from typing import List
 
 providers = []
 axengine_provider_name = "AxEngineExecutionProvider"

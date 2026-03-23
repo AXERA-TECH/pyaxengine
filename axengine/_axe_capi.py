@@ -7,9 +7,9 @@
 
 import ctypes.util
 import platform
+from typing import List
 
 from cffi import FFI
-from typing import List
 
 __all__: List[str] = ["sys_lib", "sys_cffi", "engine_lib", "engine_cffi"]
 
