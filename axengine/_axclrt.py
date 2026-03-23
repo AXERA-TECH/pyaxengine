@@ -17,7 +17,7 @@ from ._axclrt_types import VNPUType
 from ._base_session import Session, SessionOptions
 from ._logging import get_logger
 from ._node import NodeArg
-from ._utils import _transform_dtype_axclrt as _transform_dtype
+from ._utils_axclrt import _transform_dtype_axclrt as _transform_dtype
 
 logger = get_logger(__name__)
 
