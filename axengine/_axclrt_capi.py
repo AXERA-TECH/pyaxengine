@@ -9,7 +9,7 @@ import ctypes.util
 
 from cffi import FFI
 
-__all__: ["axclrt_cffi", "axclrt_lib"]
+__all__: list[str] = ["axclrt_cffi", "axclrt_lib"]
 
 axclrt_cffi = FFI()
 
@@ -29,13 +29,13 @@ axclrt_cffi.cdef(
         uint32_t num;
         int32_t devices[AXCL_MAX_DEVICE_COUNT];
     } axclrtDeviceList;
-    
+
     typedef enum axclrtMemMallocPolicy {
         AXCL_MEM_MALLOC_HUGE_FIRST,
         AXCL_MEM_MALLOC_HUGE_ONLY,
         AXCL_MEM_MALLOC_NORMAL_ONLY
     } axclrtMemMallocPolicy;
-    
+
     typedef enum axclrtMemcpyKind {
         AXCL_MEMCPY_HOST_TO_HOST,
         AXCL_MEMCPY_HOST_TO_DEVICE,     //!< host vir -> device phy
@@ -60,7 +60,7 @@ axclrt_cffi.cdef(
         AXCL_VNPU_BIG_LITTLE = 2,
         AXCL_VNPU_LITTLE_BIG = 3,
     } axclrtEngineVNpuKind;
-    
+
     typedef enum axclrtEngineDataType {
         AXCL_DATA_TYPE_NONE = 0,
         AXCL_DATA_TYPE_INT4 = 1,
@@ -80,13 +80,13 @@ axclrt_cffi.cdef(
         AXCL_DATA_TYPE_FP32 = 15,
         AXCL_DATA_TYPE_FP64 = 16,
     } axclrtEngineDataType;
-    
+
     typedef enum axclrtEngineDataLayout {
         AXCL_DATA_LAYOUT_NONE = 0,
         AXCL_DATA_LAYOUT_NHWC = 0,
         AXCL_DATA_LAYOUT_NCHW = 1,
     } axclrtEngineDataLayout;
-    
+
     typedef struct axclrtEngineIODims {
         int32_t dimCount;
         int32_t dims[AXCLRT_ENGINE_MAX_DIM_CNT];
@@ -190,9 +190,9 @@ axclrt_cffi.cdef(
 
 rt_name = "axcl_rt"
 rt_path = ctypes.util.find_library(rt_name)
-assert (
-        rt_path is not None
-), f"Failed to find library {rt_name}. Please ensure it is installed and in the library path."
+if rt_path is None:
+    raise ImportError(f"Failed to find library {rt_name}. Please ensure it is installed and in the library path.")
 
 axclrt_lib = axclrt_cffi.dlopen(rt_path)
-assert axclrt_lib is not None, f"Failed to load library {rt_path}. Please ensure it is installed and in the library path."
+if axclrt_lib is None:
+    raise ImportError(f"Failed to load library {rt_path}. Please ensure it is installed and in the library path.")

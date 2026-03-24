@@ -1,0 +1,3 @@
+.sisyphus/
+__pycache__/
+.coverage

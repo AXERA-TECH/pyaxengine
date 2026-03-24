@@ -9,11 +9,11 @@ import ctypes.util as cutil
 import os
 
 providers = []
-axengine_provider_name = 'AxEngineExecutionProvider'
-axclrt_provider_name = 'AXCLRTExecutionProvider'
+axengine_provider_name = "AxEngineExecutionProvider"
+axclrt_provider_name = "AXCLRTExecutionProvider"
 
-_axengine_lib_name = 'ax_engine'
-_axclrt_lib_name = 'axcl_rt'
+_axengine_lib_name = "ax_engine"
+_axclrt_lib_name = "axcl_rt"
 
 _AXCL_HOST_DEVICE = '/dev/axcl_host'
 
@@ -33,9 +33,9 @@ elif _has_axengine_lib:
     providers = [axengine_provider_name]
 
 
-def get_all_providers():
+def get_all_providers() -> list[str]:
     return [axengine_provider_name, axclrt_provider_name]
 
 
-def get_available_providers():
+def get_available_providers() -> list[str]:
     return providers

@@ -7,7 +7,15 @@
 
 
 class NodeArg(object):
-    def __init__(self, name, dtype, shape):
-        self.name = name
-        self.dtype = dtype
-        self.shape = shape
+    """Represents a node argument with type and shape information.
+
+    Attributes:
+        name: The name of the argument.
+        dtype: The data type of the argument (e.g., 'float32', 'int64').
+        shape: The shape of the argument as a tuple of integers.
+    """
+
+    def __init__(self, name: str, dtype: str, shape: tuple[int, ...]) -> None:
+        self.name: str = name
+        self.dtype: str = dtype
+        self.shape: tuple[int, ...] = shape

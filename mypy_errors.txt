@@ -1,0 +1,53 @@
+pyproject.toml: [mypy]: python_version: Python 3.8 is not supported (must be 3.9 or higher)
+axengine/_axe_capi.py:11: error: Library stubs not installed for "cffi"  [import-untyped]
+axengine/_axe_capi.py:13: error: Bracketed expression "[...]" is not valid as a type  [valid-type]
+axengine/_axclrt_capi.py:10: error: Library stubs not installed for "cffi"  [import-untyped]
+axengine/_axclrt_capi.py:10: note: Hint: "python3 -m pip install types-cffi"
+axengine/_axclrt_capi.py:10: note: (or run "mypy --install-types" to install all missing stub packages)
+axengine/_axclrt_capi.py:10: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
+axengine/_axclrt_capi.py:12: error: Bracketed expression "[...]" is not valid as a type  [valid-type]
+axengine/_base_session.py:29: error: Need type annotation for "_inputs" (hint: "_inputs: list[<type>] = ...")  [var-annotated]
+axengine/_base_session.py:30: error: Need type annotation for "_outputs" (hint: "_outputs: list[<type>] = ...")  [var-annotated]
+axengine/_base_session.py:52: error: Returning Any from function declared to return "list[NodeArg]"  [no-any-return]
+axengine/_base_session.py:58: error: Returning Any from function declared to return "list[NodeArg]"  [no-any-return]
+axengine/_axe.py:23: error: Bracketed expression "[...]" is not valid as a type  [valid-type]
+axengine/_axe.py:23: note: Did you mean "List[...]"?
+axengine/_axe.py:99: error: X | Y syntax for unions requires Python 3.10  [syntax]
+axengine/_axe.py:100: error: X | Y syntax for unions requires Python 3.10  [syntax]
+axengine/_axe.py:101: error: X | Y syntax for unions requires Python 3.10  [syntax]
+axengine/_axe.py:303: error: Argument 3 to "NodeArg" has incompatible type "list[Any]"; expected "tuple[int, ...]"  [arg-type]
+axengine/_axe.py:314: error: Signature of "run" incompatible with supertype "axengine._base_session.Session"  [override]
+axengine/_axe.py:314: note:      Superclass:
+axengine/_axe.py:314: note:          def run(self, output_names: Optional[list[str]], input_feed: dict[str, ndarray[Any, dtype[Any]]], run_options: Any = ...) -> list[ndarray[Any, dtype[Any]]]
+axengine/_axe.py:314: note:      Subclass:
+axengine/_axe.py:314: note:          def run(self, output_names: list[str], input_feed: dict[str, ndarray[Any, dtype[Any]]], run_options: Any = ..., shape_group: int = ...) -> Any
+axengine/_axe.py:361: error: "str" has no attribute "itemsize"  [attr-defined]
+axengine/_axclrt.py:24: error: Bracketed expression "[...]" is not valid as a type  [valid-type]
+axengine/_axclrt.py:24: note: Did you mean "List[...]"?
+axengine/_axclrt.py:28: error: Need type annotation for "_all_model_instances" (hint: "_all_model_instances: list[<type>] = ...")  [var-annotated]
+axengine/_axclrt.py:72: error: X | Y syntax for unions requires Python 3.10  [syntax]
+axengine/_axclrt.py:73: error: X | Y syntax for unions requires Python 3.10  [syntax]
+axengine/_axclrt.py:74: error: X | Y syntax for unions requires Python 3.10  [syntax]
+axengine/_axclrt.py:318: error: Signature of "run" incompatible with supertype "axengine._base_session.Session"  [override]
+axengine/_axclrt.py:318: note:      Superclass:
+axengine/_axclrt.py:318: note:          def run(self, output_names: Optional[list[str]], input_feed: dict[str, ndarray[Any, dtype[Any]]], run_options: Any = ...) -> list[ndarray[Any, dtype[Any]]]
+axengine/_axclrt.py:318: note:      Subclass:
+axengine/_axclrt.py:318: note:          def run(self, output_names: list[str], input_feed: dict[str, ndarray[Any, dtype[Any]]], run_options: Any = ..., shape_group: int = ...) -> Any
+axengine/_axclrt.py:345: error: Value of type "Optional[Any]" is not indexable  [index]
+axengine/_axclrt.py:355: error: Value of type "Optional[Any]" is not indexable  [index]
+axengine/_axclrt.py:363: error: Value of type "Optional[Any]" is not indexable  [index]
+axengine/_axclrt.py:367: error: "str" has no attribute "itemsize"  [attr-defined]
+axengine/_session.py:36: error: X | Y syntax for unions requires Python 3.10  [syntax]
+axengine/_session.py:37: error: X | Y syntax for unions requires Python 3.10  [syntax]
+axengine/_session.py:38: error: X | Y syntax for unions requires Python 3.10  [syntax]
+axengine/_session.py:39: error: X | Y syntax for unions requires Python 3.10  [syntax]
+axengine/_session.py:110: error: Argument 3 to "AXCLRTSession" has incompatible type "Optional[Sequence[dict[Any, Any]]]"; expected "Optional[dict[Any, Any]]"  [arg-type]
+axengine/_session.py:114: error: Incompatible types in assignment (expression has type "AXEngineSession", variable has type "Optional[AXCLRTSession]")  [assignment]
+axengine/_session.py:114: error: Argument 3 to "AXEngineSession" has incompatible type "Optional[Sequence[dict[Any, Any]]]"; expected "Optional[dict[Any, Any]]"  [arg-type]
+axengine/_session.py:155: error: Item "None" of "Optional[AXCLRTSession]" has no attribute "get_inputs"  [union-attr]
+axengine/_session.py:166: error: Item "None" of "Optional[AXCLRTSession]" has no attribute "get_outputs"  [union-attr]
+axengine/_session.py:169: error: X | Y syntax for unions requires Python 3.10  [syntax]
+axengine/_session.py:182: error: Returning Any from function declared to return "list[ndarray[Any, dtype[Any]]]"  [no-any-return]
+axengine/_session.py:182: error: Item "None" of "Optional[AXCLRTSession]" has no attribute "run"  [union-attr]
+axengine/_session.py:182: error: Argument 1 to "run" of "AXCLRTSession" has incompatible type "Optional[list[str]]"; expected "list[str]"  [arg-type]
+Found 38 errors in 6 files (checked 13 source files)
